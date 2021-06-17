@@ -294,7 +294,7 @@
     }
   </script>
 
-  <script type="text/x-template" id="logs">
+  <script type="text/x-template" id="history">
     <div>
       <h1 class="font-weight-light mb-0">История игр:</h1>
       <v-toolbar flat color="primary lighten-2" class="pt-4" >
@@ -384,11 +384,25 @@
         <template v-slot:item.startedAt="{ item }">
           {{ textDate(item.startedAt) }}
         </template>
+        <template v-slot:item.result="{ item }">
+          <v-btn text :to="`/history/${item.id}/result`">
+            <v-icon>
+              mdi-text-box-check-outline
+            </v-icon>
+          </v-btn>
+        </template>
+        <template v-slot:item.logs="{ item }">
+          <v-btn text :to="`/history/${item.id}/logs`">
+            <v-icon>
+              mdi-shoe-print
+            </v-icon>
+          </v-btn>
+        </template>
       </v-data-table>
     </div>
   </script>
-  <script id="logs">
-    const Logs = {
+  <script id="history">
+    const History = {
       data: () => ({
         search: [],
         filters: [
@@ -440,7 +454,7 @@
         count: 0,
       }),
       computed: {
-        ...Vuex.mapGetters(["textDate", "getLogs"]),
+        ...Vuex.mapGetters(["textDate", "getHistory"]),
       },
       methods: {
         selectedItemText(item) {
@@ -478,7 +492,7 @@
 
           let { itemsPerPage, sortBy, sortDesc, page, ...rest } = this.options
 
-          return this.getLogs({
+          return this.getHistory({
             limit: itemsPerPage === -1 ? 0 : itemsPerPage,
             filter: this.search,
             sort: sortDesc[0] === true ? 1 : -1,
@@ -502,9 +516,143 @@
           deep: true,
         },
       },
-      template: "#logs"
+      template: "#history"
     }
   </script>
+
+<script type="text/x-template" id="gameResult">
+  <v-container>
+    <h1 class="font-weight-light mb-4">Результат игры c id: {{id}}</h1>
+    <v-row no-gutters >
+      <v-col cols="1">
+      </v-col>
+      <v-col v-for="p in 4" :key="p">
+        <v-card
+          class="pa-2"
+          outlined
+          tile
+        >
+          <v-chip
+            color="secondary lighten-2"
+            class="ml-0 mr-2"
+          >
+           {{ p }}
+          </v-chip>
+          {{ players[p-1] }}
+        </v-card>
+      </v-col>
+
+    </v-row>
+    <v-row no-gutters v-for="r in 29" :key="r" align="center">
+      <v-col cols="1"  >
+        <span class="float-right pr-4">{{ rowLable(r) }}</span>
+      </v-col>
+      <v-col v-for="p in 4" :key="p" >
+        <v-card
+          class="pa-2"
+          outlined
+          tile
+          :class="showChip(r) ? '' : 'grey lighten-5'"
+        >
+          <v-card-text class="pt-0 pb-0 text-center">
+            <v-chip
+              v-if="showChip(r)"
+              color="green lighten-4"
+              class="ml-0 mr-2 black--text float-left"
+              label
+              small 
+            >
+              {{ rowDataChip(r,p) }}
+            </v-chip>
+      
+            <span :class="showChip(r) ? '' : 'font-weight-bold' ">{{ rowData(r,p) }}</span>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</script>
+<script id="gameResult">
+const GameResult = {
+  template: '#gameResult',
+  props: ["id"],
+  data: () => ({
+    result: [],
+    players: []
+  }),
+  watch: {
+    id: {
+      immediate: true,
+      async handler (value, oldVal) {
+        const { result, players } = await this.getGameResult(this.id)
+        this.players = players
+        this.result = result
+      }
+    },
+  },
+  computed: {
+    ...Vuex.mapGetters(["getGameResult"]),
+  },
+  methods: {
+    showChip(index) {
+      return ![9, 14, 23, 28, 29].includes(index)
+    },
+    rowLable(index) {
+      if ([9, 14, 23, 28, 29].includes(index)) {
+        return ""
+      }
+      if (index < 9) {
+        return index
+      } else if (index < 14) {
+        return 9
+      } else if (index < 23) {
+        return Math.abs(index - 23)
+      } else {
+        return 9
+      }
+    },
+    rowDataChip(index, player) {
+      if (!this.result.length) {
+        return ""
+      }
+      if ([9, 14, 23, 28, 29].includes(index)) {
+        return ""
+      }
+      return this.result[index][player-1][0]
+    },
+    rowData(index, player) {
+      if (!this.result.length) {
+        return ""
+      }
+      if ([9, 14, 23, 28].includes(index)) {
+        return this.result[index][player-1]
+      }
+      if (index === 29) {
+        return this.result[0][player-1]
+      }
+      return this.result[index][player-1][1]
+    }
+  }
+}
+</script>
+
+<script type="text/x-template" id="logs">
+  <div>
+  </div>
+</script>
+<script id="logs">
+const Logs = {
+  template: '#logs',
+  data: () => ({
+
+  }),
+  computed: {
+  },
+  methods: {
+  }
+}
+</script>
+
 
   <script type="text/x-template" id="settings">
     <div>
@@ -787,7 +935,6 @@
       }
     }),
     computed: {
-      token() { return this.$store.state.token },
       ...Vuex.mapGetters(["createTournament", "getTournament", "updateTournament"]),
     },
     watch: {
@@ -1000,6 +1147,47 @@
       },
     ]
 
+    const fakeResult = () => {
+
+      return [
+        [ 13.6, 10.4, 6, 2 ],
+        [[0, 50], [1, 100], [1, 0], [0, 50]],
+        [[1, 100], [1, 100], [1, 0], [0, 50]],
+        [[0, 50], [0, 10], [1, 100], [1, 100]],
+        [[1, 100], [2, 150], [0, 50], [3, 10]],
+        [[1, 100], [2, 150], [0, 50], [3, 10]],
+        [[0, 50], [0, 50], [3, 200], [3, 20]],
+        [[1, 20], [1, 100], [2, 150], [1, 100]],
+        [[1, 100], [2, 30], [1, 100], [2, 150]],
+        [ 4.9, 5.7, 7, 5 ],
+        [[3, 200], [2, 150], [3, 200], [2, 10]],
+        [[0, 50], [4, 20], [2, 50], [2, 150]],
+        [[0, 50], [3, 0], [2, 30], [3, 200]],
+        [[2, 150], [3, 200], [0, 10], [3, 200]],
+        [6.5, 3.7, 2.9, 5.6],
+        [[1, 100], [2, 30], [1, 100], [2, 150]],
+        [[1, 20], [1, 100], [2, 150], [1, 100]],
+        [[0, 50], [0, 50], [3, 200], [3, 20]],
+        [[1, 100], [2, 150], [0, 50], [3, 10]],
+        [[0, 50], [0, 10], [1, 100], [1, 100]],
+        [[1, 100], [1, 100], [1, 0], [0, 50]],
+        [[1, 100], [2, 150], [0, 50], [3, 10]],
+        [[0, 50], [1, 100], [1, 0], [0, 50]],
+        [ 4.9, 5.7, 7, 5 ],
+        [[3, 200], [2, 150], [3, 200], [2, 10]],
+        [[0, 50], [4, 20], [2, 50], [2, 150]],
+        [[0, 50], [3, 0], [2, 30], [3, 200]],
+        [[2, 150], [3, 200], [0, 10], [3, 200]],
+        [6.5, 3.7, 2.9, 5.6]
+      ]
+    }
+
+    const fakeLogs = () => {
+      return {
+
+      }
+    }
+
     const fakeGame = () => {
       const createdAt =  Date.now() - Math.random()*10000000
       const startedAt = createdAt + 10000
@@ -1047,12 +1235,12 @@
         error: "",
         loading: false,
         sidebar: true,
-        token: "",
+        token: "1",
         username: "admin",
         menu: [
           { title: "Настройки", href: "/", icon: "mdi-cog-outline" },
           { title: "Турниры", href: "/tournaments", icon: "mdi-account-group-outline" },
-          { title: "Логи игр", href: "/logs", icon: "mdi-text-box-search-outline" },
+          { title: "История игр", href: "/history", icon: "mdi-text-box-search-outline" },
         ],
         settings: {},
       },
@@ -1170,14 +1358,31 @@
           tournamentsData[index] = { id: lastTournamentId++, ...data }
           return { success: true }
         },
-        getLogs: ({ token }) => async (options) => {
+        getHistory: ({ token }) => async (options) => {
           // const { body } = await superagent
           //   .get(`/admin/logs`)
           //   .query(options)
           //   .set({ 'Authorization': 'Bearer ' + token })
           // return body
           return { data: games, count: games.length }
-        }
+        },
+        getGameResult: ({ token }) => async (id) => {
+          // const { body } = await superagent
+          //   .get(`/admin/logs`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          const game = games.find((item) => item.id === Number(id))
+          return { result: fakeResult(), players: game.players }
+        },
+        getGameLogs: ({ token }) => async (options) => {
+          // const { body } = await superagent
+          //   .get(`/admin/logs`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          return { result: fakeLogs() }
+        },
       },
       mutations: {
         setLoading(state, value) { state.loading = value },
@@ -1228,7 +1433,9 @@
         { path: '/tournaments', component: Tournaments },
         { path: '/tournaments/create', component: TournamentForm },
         { path: '/tournaments/:id', component: TournamentForm, props: true },
-        { path: '/logs', component: Logs },
+        { path: '/history', component: History },
+        { path: '/history/:id/logs', component: Logs, props: true },
+        { path: '/history/:id/result', component: GameResult, props: true },
       ]
     })
   </script>
