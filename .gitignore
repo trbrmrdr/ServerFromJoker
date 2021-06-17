@@ -65,3 +65,4 @@ dist
 
 # ssh keys
 *.pem
+.env
