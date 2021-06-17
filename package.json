@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "jest --runInBand",
-    "start": "fastify start -l info dist/app.js",
+    "start": "node dist/index.js",
+    "start:app": "fastify start -l info dist/app.js",
     "build": "tsc",
     "start:ts": "ts-node src/index.ts",
     "dev": "tsc && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\"  \"tsc -w\" \"fastify start -w -l info -P dist/app.js\""
