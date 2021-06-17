@@ -23,7 +23,7 @@ server.addHook('onClose', async (instance, done) => {
   done()
 })
 
-server.listen(process.env.PORT || config.port, (err, address) => {
+server.listen(config.port, config.host, (err, address) => {
   if (err) {
     logger.error(err)
     process.exit(1)

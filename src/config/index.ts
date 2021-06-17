@@ -4,6 +4,7 @@ export const config = {
   // server
   nodeEnv: $("NODE_ENV", String, "dev"),
   port: $("PORT", Number, 3000),
+  host: $("HOST", String, "::"),
   baseUrl: $("BASE_URL"),
   logLevel: $("LOG_LEVEL", String, "info"),
 
