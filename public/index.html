@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Joker Admin Console</title>
+</head>
+
+<body>
+  <div id="app">
+    <layout></layout>
+  </div>
+  
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/vuex"></script>
+  <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/superagent/4.1.0/superagent.min.js"></script>
+
+  <script type="text/x-template" id="layout">
+    <v-app >
+      <div v-if="token">
+        <appbar></appbar>
+        <sidebar></sidebar>
+        <v-main>
+          <v-container class="px-4 py-0 fill-height" fluid>
+            <v-row class="fill-height">
+              <v-col>
+                <transition name="fade">
+                  <router-view></router-view>
+                </transition>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-main>
+      </div>
+      <div v-else> 
+        <login></login>
+      </div>
+      <loader></loader>
+      <error></error>
+    </v-app>
+  </script>
+  <script id="layout">
+    const Layout = {
+      template: "#layout",
+      computed: {
+        ...Vuex.mapState(["token"])
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="appbar">
+    <v-app-bar app color="primary" dark elevation="0">
+      <v-app-bar-nav-icon @click.stop="toggleSideBar" class="hidden-md-and-up"></v-app-bar-nav-icon>
+      <v-spacer></v-spacer>
+      <v-btn @click="logout" color="secondary" class="mr-2"><v-icon>mdi-logout</v-icon><span class="hidden-sm-and-down">Выход</span></v-btn>
+
+    </v-app-bar>
+  </script>
+  <script id="appbar">
+    const AppBar = {
+      template: "#appbar",
+      methods: {
+        ...Vuex.mapActions(["toggleSideBar", "logout"])
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="sidebar">
+    <v-navigation-drawer v-model="sidebarMenu" app floating :permanent="$vuetify.breakpoint.mdAndUp">
+      <v-list dense color="primary" dark>
+        <v-list-item>
+          <v-img src="/public/logo.png" max-height="48" max-width="60" class="mr-4"></v-img>
+          <v-list-item-content>
+            <v-list-item-title>
+              <h3 class="">Joker Console</h3>
+            </v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+      <v-list-item class="px-2">
+        <v-list-item-avatar>
+          <v-icon>mdi-account-outline</v-icon>
+        </v-list-item-avatar>
+        <v-list-item-content class="text-truncate">
+          {{ username }}
+        </v-list-item-content>
+
+      </v-list-item>
+      <v-divider></v-divider>
+      <v-list>
+        <v-list-item v-for="item in items" :key="item.title" link :to="item.href">
+          <v-list-item-icon>
+            <v-icon color="primary">{{ item.icon }}</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>
+            <v-list-item-title class="primary--text">{{ item.title }}</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+  </script>
+  <script id="sidebar">
+    const SideBar = {
+      template: '#sidebar',
+      computed: {
+        username() { return this.$store.state.username || "Админ" },
+        items() { return this.$store.state.menu || [] },
+        sidebarMenu: {
+          get() { return this.$store.state.sidebar },
+          set(value) { this.$store.commit("setSideBar", value) }
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="loader">
+    <v-dialog v-model="loading" persistent width="120">
+      <v-card>
+        <v-card-text class="text-xs-center">
+          <v-progress-circular :size="70" indeterminate class="secondary--text"/>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="loader">
+    const Loader = {
+      template: "#loader",
+      computed: {
+        loading: {
+          get() { return this.$store.state.loading },
+          set(value) { this.$store.commit("setLoading", value) }
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="tournaments">
+    <div>
+      <h1 class="font-weight-light mb-0">Турниры:</h1>
+      <v-toolbar dense flat dark color="primary lighten-2" >
+        <v-text-field
+          v-model="search"
+          append-icon="mdi-magnify"
+          label="Поиск"
+          class="mx-4"
+          single-line
+          clearable
+          hide-details
+        ></v-text-field>
+        <v-btn color="primary" class="ml-2" to="/tournaments/create">
+          <v-icon left dark> mdi-plus-thick </v-icon>
+          Создать новый
+        </v-btn>
+      </v-toolbar>
+      <v-data-table
+        :headers="headers"
+        :items="tournaments"
+        :options.sync="options"
+        :server-items-length="count"
+        :loading="loading"
+        item-key="_id"
+      >
+        <template v-slot:item.avatar="{ item }">
+          <v-avatar class="grey lighten-4">
+            <img
+              v-if="item.profile && item.profile.avatar"
+              :src="item.profile.avatar"
+            />
+            <v-icon v-else> mdi-account-outline </v-icon>
+          </v-avatar>
+        </template>
+        <template v-slot:item.startTime="{ item }">
+          {{ textDate(item.startTime) }}
+        </template>
+        <template v-slot:item.repeatEvery="{ item }">
+          {{ textDuration(item.repeatEvery) }}
+        </template>
+        <template v-slot:item.requiredPlayers="{ item }">
+          {{ item.requiredPlayers + "%" }}
+        </template>
+        <template v-slot:item.autoDuplicate="{ item }">
+          <v-checkbox readonly
+            v-model="item.autoDuplicate"
+          ></v-checkbox>
+        </template>
+        <template v-slot:item.actions="{ item }">
+          <v-btn color="accent" :to="editLink(item.id)" small fab><v-icon>mdi-square-edit-outline</v-icon><span hidden>Изменить</span></v-btn>
+          <v-btn @click="selected = item; dialog = true" small fab><v-icon>mdi-delete</v-icon><span hidden>Удалить</span></v-btn>
+        </template>
+      </v-data-table>
+      <v-dialog
+        v-model="dialog"
+        max-width="290"
+      >
+        <v-card>
+          <v-card-title class="text-h5">
+            Удалить турнир "{{selected ? selected.name : ""}}"?
+          </v-card-title>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+
+            <v-btn text @click="dialog = false">
+              Отмена
+            </v-btn>
+
+            <v-btn color="red darken-1" text  @click="deleteSelected()">
+              Удалить
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </div>
+  </script>
+  <script id="tournaments">
+    const Tournaments = {
+      data: () => ({
+        dialog: false,
+        selected: null,
+        search: '',
+        loading: false,
+        headers: [
+          // { text: 'Id', value: 'id' },
+          { text: 'Название', value: 'name' },
+          { text: 'Кол-во игроков', value: 'maxPlayers' },
+          { text: 'Призовой фонд', value: 'totalAward' },
+          { text: 'Время начала', value: 'startTime', sortable: false },
+          { text: 'Многократный, повтор', value: 'repeatEvery' },
+          { text: '% участников для начала', value: 'requiredPlayers' },
+          { text: 'Авто создание нового', value: 'autoDuplicate' },
+          { text: 'Действия', value: "actions" }
+        ],
+        options: {},
+        tournaments: [],
+        count: 0,
+      }),
+      computed: {
+        ...Vuex.mapGetters(["getTournaments", "deleteTournament", "textDuration", "textDate"]),
+        editLink() { return (id) => `/tournaments/${id}`}
+      },
+      methods: {
+
+        async deleteSelected() {
+          this.loading = true
+          this.dialog = false
+          try {
+            const data = await this.deleteTournament(this.selected.id)
+            if (data && data.success) {
+              await this.refresh()
+            }
+          } catch (error) {
+            console.log(error)
+          }
+          this.loading = false
+        },
+        async refresh() {
+          this.loading = true
+
+          let { itemsPerPage, sortBy, sortDesc, page, ...rest } = this.options
+
+          try {
+            const { data, count } = await this.getTournaments({
+              limit: itemsPerPage === -1 ? 0 : itemsPerPage,
+              filter: this.search,
+              sort: sortDesc[0] === true ? 1 : -1,
+              sortBy: sortBy[0],
+              page: page - 1
+            })
+            
+            this.tournaments = data
+            this.count = count
+          } catch (error) {
+            console.log(error)
+          }
+          this.loading = false
+        },
+      },
+      watch: {
+        options: {
+          handler() { this.refresh() },
+          deep: true,
+        },
+        search() {
+          this.refresh()
+        }
+      },
+      template: "#tournaments"
+    }
+  </script>
+
+  <script type="text/x-template" id="logs">
+    <div>
+      <h1 class="font-weight-light mb-0">История игр:</h1>
+      <v-toolbar flat color="primary lighten-2" class="pt-4" >
+        <v-select
+          ref="filter"
+          v-model="search"
+          :items="filters"
+          label="Фильтры"
+          multiple
+        >
+          <template v-slot:selection="{ item, index }">
+            <v-chip>
+              <span>{{ selectedItemText(item) }}</span>
+            </v-chip>
+          </template>
+          <template v-slot:item="{ item, index }">
+            <v-list-item readonly dense>
+              <v-list-item-action @click="item.selected = !item.selected">
+                <v-icon>
+                  {{ item.selected ? 'mdi-close-box' : 'mdi-checkbox-blank-outline'}}
+                </v-icon>
+              </v-list-item-action>
+              <v-list-item-content>
+                <v-col cols="3">
+                  <span>{{ item.text }}:</span>
+                </v-col>
+                <v-col v-if="item.type === 'text'" cols="9">
+                  <v-text-field dense v-model="item.data" hide-details @change="updateItem(item)" />
+                </v-col>
+                <v-col v-if="item.type === 'date'" cols="3" @change="updateItem(item)">
+                  <v-text-field dense v-model="item.from" hide-details type="date" />
+                </v-col>
+                <v-col v-if="item.type === 'date'" cols="3">
+                  <v-checkbox dense hide-details
+                    v-model="item.interval"
+                    label="Интервал"
+                  ></v-checkbox>
+                </v-col>
+                <v-col v-if="item.type === 'date'" cols="3"  >
+                  <v-text-field dense v-model="item.to" :disabled="!item.interval" hide-details type="date"/>
+                </v-col>
+                <v-col v-if="item.type === 'select'" cols="9">
+                  <v-checkbox dense hide-details @change="updateItem(item)"
+                    v-model="item.data"
+                    label="Да"
+                    prefix="Нет"
+                  ></v-checkbox>
+                </v-col>
+              </v-list-item-content>
+            </v-list-item>
+          </template>
+          <template v-slot:prepend-item>
+            <v-list-item ripple readonly>
+
+              <v-list-item-content>
+                <v-list-item-title>
+                  Выбранные фильтры:
+                </v-list-item-title>
+
+              </v-list-item-content>
+
+              <v-btn class="mr-3" @click="clear()">Очистить</v-btn>
+              <v-btn @click.stop="apply()">Применить</v-btn>
+
+            </v-list-item>
+            <v-divider class="mt-2"></v-divider>
+          </template>
+        </v-select>
+      </v-toolbar>
+      <v-data-table
+        :headers="headers"
+        :items="logs"
+        :options.sync="options"
+
+        :loading="loading"
+        item-key="id"
+      >
+        <template v-slot:item.players="{ item }">
+          {{ item.players.join(", ") }}
+        </template>
+        <template v-slot:item.params="{ item }">
+          {{ item.type === "normal" ? `пароль: ${item.params.password || ""}, цена входа: ${item.params.bet || 0}` : `номер стола: ${item.params.tableIndex}` }}
+        </template>
+        <template v-slot:item.createdAt="{ item }">
+          {{ textDate(item.createdAt) }}
+        </template>
+        <template v-slot:item.startedAt="{ item }">
+          {{ textDate(item.startedAt) }}
+        </template>
+      </v-data-table>
+    </div>
+  </script>
+  <script id="logs">
+    const Logs = {
+      data: () => ({
+        search: [],
+        filters: [
+        {
+            text: "Назнаие", 
+            fiels: "name",
+            type: "text",
+            data: "",
+            selected: false,
+          },
+          { 
+            text: "Дата начала",
+            field: "startedAt",
+            type: "date",
+            from: "",
+            to: "",
+            interval: false,
+            selected: false,
+          }, 
+          { 
+            text: "Турнир",
+            field: "type",
+            type: "select",
+            data: false,
+            selected: false,
+          }, 
+          { 
+            text: "Id игрока",
+            field: "players",
+            type: "text",
+            data: "",
+            selected: false
+          }
+        ],
+        loading: false,
+        headers: [
+          { text: 'Id', value: 'id' },
+          // { text: 'Уникальный Id', value: 'searchId' },
+          { text: 'Дата создания', value: 'createdAt' },
+          { text: 'Дата начала игры', value: 'startedAt' },
+          { text: 'Участинки', value: 'players' },
+          { text: 'Тип игры', value: 'type' },
+          { text: 'Параметры', value: 'params' },
+          { text: 'Счет', value: 'result' },
+          { text: 'Список ходов', value: 'logs' },
+        ],
+        options: {},
+        logs: [],
+        count: 0,
+      }),
+      computed: {
+        ...Vuex.mapGetters(["textDate", "getLogs"]),
+      },
+      methods: {
+        selectedItemText(item) {
+          switch (item.type) {
+            case "text": return `${item.text}: ${item.data}`
+            case "date": return item.interval 
+              ? `${item.text}: ${item.from} - ${item.to}`
+              : `${item.text}: ${item.from}`
+            case "select": return `${item.text}: ${item.data ? "Да" : "Нет"}`
+          }
+          return ""
+        },
+        apply() {
+          this.search = []
+          this.filters.forEach((item) => {
+            if (item.selected) {
+              this.search.push(item)
+            }
+          })
+          this.$refs.filter.isMenuActive = false;
+        },
+        clear() {
+          this.search = []
+          this.$refs.filter.isMenuActive = false;
+        },
+        updateItem(item) {
+          if (item.type === "date") {
+            item.selected = !!item.from
+          } else {
+            item.selected = !!item.data || item.type === "select"
+          }
+        },
+        updateLogs() {
+          this.loading = true
+
+          let { itemsPerPage, sortBy, sortDesc, page, ...rest } = this.options
+
+          return this.getLogs({
+            limit: itemsPerPage === -1 ? 0 : itemsPerPage,
+            filter: this.search,
+            sort: sortDesc[0] === true ? 1 : -1,
+            sortBy: sortBy[0],
+            page: page - 1
+          })
+            .then(({ data, count }) => {
+              this.logs = data
+              this.count = count
+              this.loading = false
+            })
+            .catch((e) => {
+              this.loading = false
+              console.log(e)
+            })
+        },
+      },
+      watch: {
+        options: {
+          handler() { this.updateLogs() },
+          deep: true,
+        },
+      },
+      template: "#logs"
+    }
+  </script>
+
+  <script type="text/x-template" id="settings">
+    <div>
+      <h1 class="font-weight-light mb-0">Настройки:</h1>
+
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Длительность ожидания игроков за столом
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="waitTime" suffix="сек"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Длительность хода
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="turnTime" suffix="сек"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Длительность ожидания возврата в игру в случае разъединения
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="reconnectionTimeout" suffix="сек"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Лимит повторных подключений при разъединении
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="reconnectionLimit" suffix="кол-во" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Задержка хода, в случае разъединения
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="reconnectionDelay" suffix="сек"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12">
+          <v-btn @click="restore">Восстановить</v-btn>
+          <v-btn color="primary" @click="save" :disabled="!updated">Сохранить</v-btn>
+        </v-col>
+      </v-row>
+    </div>
+  </script>
+  <script id="settings">
+  const Settings = {
+    template: '#settings',
+    data: () => ({
+      updates: {},
+      updated: false,
+      
+    }),
+    async mounted() {
+      await this.$store.dispatch("loadSettings")
+    },
+    computed: {
+      token() { return this.$store.state.token },
+      settings() { return this.$store.state.settings },
+      ...Vuex.mapGetters(["updateSettings"]),
+      waitTime: {
+        get() { return this.settings.waitTime },
+        set(value) { this.updateSetting("waitTime", value) }
+      },
+      turnTime: {
+        get() { return this.settings.turnTime },
+        set(value) { this.updateSetting("turnTime", value) }
+      },
+      reconnectionTimeout: {
+        get() { return this.settings.reconnectionTimeout },
+        set(value) { this.updateSetting("reconnectionTimeout", value) }
+      },
+      reconnectionLimit: {
+        get() { return this.settings.reconnectionLimit },
+        set(value) { this.updateSetting("reconnectionLimit", value) }
+      },
+      reconnectionDelay: {
+        get() { return this.settings.reconnectionDelay },
+        set(value) { this.updateSetting("reconnectionDelay", value) }
+      }
+    },
+    methods: {
+      async save() {
+        await this.updateSettings(this.updates)
+        this.updates = {}
+        this.updated = false
+      },
+      updateSetting(name, value) {
+        this.updates[name] = value
+        this.updated = true
+        this.$store.commit("updateSetting", { name, value })
+      },
+      async restore() {
+        await this.$store.dispatch("restoreSettings")
+        this.updates = {}
+        this.updated = false
+      }
+    }
+  }
+  </script>
+
+  <script type="text/x-template" id="tournament-form">
+    <v-container>
+
+      <h1 v-if="id" class="font-weight-light mb-0">Редактировать турнир</h1>
+      <h1 v-else class="font-weight-light mb-0">Создать турнир</h1>
+
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Название турнира
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.name" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Кол-во игроков
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.maxPlayers" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Цена входа
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.registrationFee" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Призовой фонд
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.totalAward" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Распределение призового фонда
+        </v-col>
+        <v-col cols="2">
+          <v-text-field v-model="props.awardDistribution[0]" />
+        </v-col>
+        <v-col cols="2">
+          <v-text-field v-model="props.awardDistribution[1]" />
+        </v-col>
+        <v-col cols="2">
+          <v-text-field v-model="props.awardDistribution[2]" />
+        </v-col>
+        <v-col cols="2">
+          <v-text-field v-model="props.awardDistribution[3]" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4">
+          Время начала турнира
+        </v-col>
+        <v-col cols="4">
+          <v-menu
+            ref="startDateSelect"
+            v-model="startDateSelect"
+            :close-on-content-click="false"
+            transition="scale-transition"
+            offset-y
+            max-width="290px"
+            min-width="auto"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-text-field
+                v-model="startDate"
+                prepend-icon="mdi-calendar"
+                readonly
+                v-bind="attrs"
+                v-on="on"
+              ></v-text-field>
+            </template>
+            <v-date-picker
+              v-model="startDate"
+              @input="startDateSelect = false"
+            ></v-date-picker>
+          </v-menu>
+        </v-col>
+        <v-col cols="4">
+          <v-text-field v-model="startTime" type="time"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4">
+          Многократный, повторять каждые:
+        </v-col>
+        <v-col cols="4">
+          <v-text-field v-model="repeatEvery" />
+        </v-col>
+        <v-col cols="4">
+          <v-select :items="repeatOptions" v-model="repeatOption" label="Интервал"></v-select>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Шаг следующего этапа
+        </v-col>
+        <v-col cols="4">
+          <v-text-field v-model="roundDuration" />
+        </v-col>
+        <v-col cols="4">
+          <v-select :items="repeatOptions" v-model="durationOption" label="Интервал"></v-select>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Шаг открытия на регистрацию
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.registrationDuration" suffix="сек" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Кол-во игроков для начала турнира
+        </v-col>
+        <v-col cols="8">
+          <v-text-field v-model="props.requiredPlayers" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="4" class="pt-6">
+          Авто открытие нового турнира
+        </v-col>
+        <v-col cols="8">
+          <v-checkbox
+            v-model="props.autoDuplicate"
+          ></v-checkbox>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12">
+          <v-btn to="/tournaments/">Отмена</v-btn>
+          <v-btn v-if="id" color="primary" @click="save">Сохранить</v-btn>
+          <v-btn v-else color="primary" @click="save">Создать</v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </script>
+  <script id="tournament-form">
+  const TournamentForm = {
+    template: '#tournament-form',
+    props: ["id"],
+    data: () => ({
+      startDateSelect: false,
+      repeatEvery: 0,
+      repeatOption: "",
+      repeatOptions: [ "", "минут", "часов", "дней", "недель" ],
+      roundDuration: 0,
+      durationOption: "",
+      startTime: "",
+      startDate: "",
+      props: {
+        name: "",
+        maxPlayers: 0,
+        registrationFee: 0,
+        totalAward: 0,
+        awardDistribution: [50, 30, 15, 5],
+        startTime: 0,
+        repeatEvery: 0,
+        roundDuration: 0,
+        registrationDuration: 0,
+        requiredPlayers: 0,
+        autoDuplicate: true,
+      }
+    }),
+    computed: {
+      token() { return this.$store.state.token },
+      ...Vuex.mapGetters(["createTournament", "getTournament", "updateTournament"]),
+    },
+    watch: {
+      id: {
+        immediate: true,
+        handler (value, oldVal) {
+          if (value) {
+            this.initData(value)
+          } else {
+            this.clearData()
+          }
+        }
+      },
+    },
+    methods: {
+      async initData (value) {
+        const data = await this.getTournament(value)
+        if (!data) {
+          this.clearData()
+          this.$router.push({ path: "/tournaments/"})
+        } else {
+          Vue.set(this.$data, "props", data)
+          const intervals = [ 1000*60*60*24*7, 1000*60*60*24, 1000*60*60, 1000*60,  0 ]
+          this.startDate = new Date(data.startTime).toISOString().slice(0,10)
+          this.startTime = new Date(data.startTime).toLocaleTimeString()
+          for (const interval of intervals) {
+            if (data.repeatEvery % interval === 0) {
+              this.repeatEvery = data.repeatEvery / interval
+              this.repeatOption = this.repeatOptions[4 - intervals.indexOf(interval)]
+              break
+            }
+          }
+          for (const interval of intervals) {
+            if (data.roundDuration % interval === 0) {
+              this.roundDuration = data.roundDuration / interval
+              this.durationOption = this.repeatOptions[4 - intervals.indexOf(interval)]
+              break
+            }
+          }
+        }
+      },
+      clearData() {
+        this.repeatEvery = 0
+        this.repeatOption = ""
+        this.roundDuration = 0
+        this.durationOption = ""
+        this.startTime = ""
+        this.props.name = "",
+        this.props.maxPlayers = 0
+        this.props.registrationFee = 0
+        this.props.totalAward = 0
+        this.props.awardDistribution = [50, 30, 15, 5]
+        this.props.startTime = 0
+        this.props.repeatEvery = 0
+        this.props.roundDuration = 0
+        this.props.registrationDuration = 0
+        this.props.requiredPlayers = 0
+        this.props.autoDuplicate = false
+      },
+      async save() {
+        const intervals = [ 1000*60*60*24*7, 1000*60*60*24, 1000*60*60, 1000*60,  0 ].reverse()
+        this.props.startTime = new Date(`${this.startDate} ${this.startTime}`).getTime()
+        this.props.repeatEvery = this.repeatEvery * intervals[this.repeatOptions.indexOf(this.repeatOption)]
+
+        this.props.roundDuration = this.roundDuration * intervals[this.repeatOptions.indexOf(this.durationOption)]
+        if (this.id) {
+          await this.updateTournament(this.id, this.props)
+        } else {
+          await this.createTournament(this.props)
+        }
+        this.$router.push({ path: "/tournaments/" })
+      }
+    }
+  }
+  </script>
+
+  <script type="text/x-template" id="login">
+    <v-dialog v-model="loginDialog" max-width="290" persistent>
+      <v-card>
+        <v-card-title class="headline">
+          Admin console authentication
+        </v-card-title>
+
+        <v-card-text>
+          <v-container fluid>
+            <v-row>
+              <v-text-field
+                v-model="email"
+                name="email"
+                label="Enter email"
+              ></v-text-field>
+            </v-row>
+            <v-row>
+              <v-text-field
+                v-model="password"
+                :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+                :type="show ? 'text' : 'password'"
+                name="password"
+                label="Enter password"
+                @click:append="show = !show"
+              ></v-text-field>
+            </v-row>
+          </v-container>  
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" :disabled="!password || !email" text @click="login" >
+            Login
+          </v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="login">
+  const Login = {
+    template: '#login',
+    data: () => ({
+      email: "",
+      password: "",
+      show: false
+    }),
+    computed: {
+      token() { return this.$store.state.token },
+      loginDialog: {
+        get() { return !this.token },
+        set(value) { }
+      }
+    },
+    methods: {
+      login() {
+        this.$store.dispatch("signin", { email: this.email, password: this.password })
+      }
+    }
+  }
+  </script>
+
+  <script type="text/x-template" id="error">    
+    <v-snackbar v-model="errorMessage" timeout="3000">
+      {{ error }}
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          color="blue"
+          text
+          v-bind="attrs"
+          @click="snackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+  </script>
+  <script id="error">
+    const ErrorMessage = {
+      template: '#error',
+      computed: {
+        error() { return this.$store.state.error },
+        errorMessage: {
+          get() { return !!this.error },
+          set(value) { this.$store.commit("setError", "") }
+        }
+      }
+    }
+  </script>
+
+  <script id="store">
+    let lastTournamentId = 3
+    const tournamentsData = [
+      { 
+        id: 1,
+        name: "1",
+        maxPlayers: 100,
+        registrationFee: 100,
+        totalAward: 1000,
+        awardDistribution: [50, 30, 15, 5],
+        startTime: Date.now() + 100000,
+        repeatEvery: 6 * 24 * 60 * 60 * 1000,
+        roundDuration: 60 * 60 * 1000,
+        registrationDuration: 24 * 60 * 60,
+        requiredPlayers: 70,
+        autoDuplicate: true,
+      },
+      { 
+        id: 2,
+        name: "2",
+        maxPlayers: 200,
+        registrationFee: 150,
+        totalAward: 10000,
+        awardDistribution: [50, 30, 15, 5],
+        startTime: Date.now() + 100000,
+        repeatEvery: 7 * 24 * 60 * 60 * 1000,
+        roundDuration: 60 * 60 * 1000,
+        registrationDuration: 24 * 60 * 60,
+        requiredPlayers: 75,
+        autoDuplicate: true,
+      },
+      { 
+        id: 3,
+        name: "3",
+        maxPlayers: 300,
+        registrationFee: 200,
+        totalAward: 10000,
+        awardDistribution: [50, 30, 15, 5],
+        startTime: Date.now() + 100000,
+        repeatEvery: 48 * 60 * 60 * 1000,
+        roundDuration: 60 * 60 * 1000,
+        registrationDuration: 24 * 60 * 60,
+        requiredPlayers: 60,
+        autoDuplicate: false,
+      },
+    ]
+
+    const fakeGame = () => {
+      const createdAt =  Date.now() - Math.random()*10000000
+      const startedAt = createdAt + 10000
+      const randomId = () => Math.random().toString(24).slice(3)
+      const type = ["normal", "tournament"][Math.floor(Math.random() * 2)]
+      const players = [randomId(), randomId(), randomId(), randomId()].sort((a, b) => a < b)
+      return {
+        id: lastLogId,
+        searchId: `${startedAt}:${players.join("|")}`,
+        name: randomId(),
+        createdAt,
+        startedAt,
+        players,
+        type,
+        params: type === "normal" ? {
+          password: randomId(),
+          bet: Math.floor(Math.random() * 1000),
+        } : {
+          tournamentId: randomId(),
+          tableIndex: Math.floor(Math.random() * 10),
+        },
+        result: [],
+        logs: [],
+      }
+    }
+
+    const games = []
+    let lastLogId = 0
+
+    for (; lastLogId < 20; lastLogId++) {
+      games.push(fakeGame())
+    }
+
+    let settings = {
+      waitTime: 30,
+      turnTime: 30,
+      reconnectionTimeout: 30,
+      reconnectionLimit: 5,
+      reconnectionDelay: 15
+    }
+
+    const store = new Vuex.Store({
+      strict: true,
+      state: {
+        error: "",
+        loading: false,
+        sidebar: true,
+        token: "1",
+        username: "admin",
+        menu: [
+          { title: "Настройки", href: "/", icon: "mdi-cog-outline" },
+          { title: "Турниры", href: "/tournaments", icon: "mdi-account-group-outline" },
+          { title: "Логи игр", href: "/logs", icon: "mdi-text-box-search-outline" },
+        ],
+        settings: {},
+      },
+      getters: {
+        textDate: () => (date = 0) => {
+          const dateText = new Date(date).toLocaleDateString()
+          const timeText = new Date(date).toLocaleTimeString()
+          return dateText + " " + timeText
+        },
+        textDuration: () => (duration = 0) => {
+          const intervals = [
+            { text: "месяцев", divider: 1000*60*60*24*30 },
+            { text: "недели", divider: 1000*60*60*24*7 },
+            { text: "дней", divider: 1000*60*60*24 },
+            { text: "часов", divider: 1000*60*60 },
+            { text: "минут", divider: 1000*60 },
+          ]
+
+          for (const interval of intervals) {
+            const num = duration / interval.divider
+            if (duration % interval.divider === 0) {
+              return `каждые ${num} ${interval.text}`
+            }
+          }
+
+          return "-"
+        },
+        getSettings: ({ token }) => async () => {
+          // const { body } = await superagent
+          //   .get("/admin/settings")
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          return settings
+        },
+        updateSettings: ({ token }) => async (data) => {
+          // const { body } = await superagent
+          //   .put("/admin/settings")
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          //   .payload(data)
+          // return body
+          settings = { ...settings, ...data }
+          return settings
+        },
+        restoreSettings: ({ token }) => async () => {
+          // const { body } = await superagent
+          //   .put("/admin/settings")
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          //   .payload(data)
+          // return body
+          settings = { 
+            waitTime: 30,
+            turnTime: 30,
+            reconnectionTimeout: 30,
+            reconnectionLimit: 5,
+            reconnectionDelay: 15
+          }
+          return settings
+        },
+        getTournaments: ({ token }) => async (options) => {
+          // const { body } = await superagent
+          //   .get(`/admin/tournaments`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          return { data: tournamentsData, count: tournamentsData.length }
+        },
+        getTournament: ({ token }) => async (id) => {
+          // const { body } = await superagent
+          //   .get(`/admin/tournaments`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          return tournamentsData.find((item) => item.id === Number(id))
+        },
+        createTournament: ({ token }) => async (data) => {
+          // const { body } = await superagent
+          //   .post(`/admin/tournaments`)
+          //   .payload(data)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          tournamentsData.push(data)
+          return { success: true }
+        },
+        deleteTournament: ({ token }) => async (id) => {
+          // const { body } = await superagent
+          //   .delete(`/admin/tournaments/${id}`)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          const index = tournamentsData.findIndex((item) => item.id === id)
+          if (index < 0) {
+            return { success: false }
+          }
+          tournamentsData.splice(index)
+          return { success: true }
+        },
+        createTournament: ({ token }) => async (data) => {
+          // const { body } = await superagent
+          //   .get(`/admin/tournaments`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          tournamentsData.push({ id: lastTournamentId++, ...data })
+          return { success: true }
+        },
+        updateTournament: ({ token }) => async (id, data) => {
+          // const { body } = await superagent
+          //   .get(`/admin/tournaments`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          const index = tournamentsData.findIndex((item) => item.id === id)
+          if (index < 0) {
+            return { success: false }
+          }
+          tournamentsData[index] = { id: lastTournamentId++, ...data }
+          return { success: true }
+        },
+        getLogs: ({ token }) => async (options) => {
+          // const { body } = await superagent
+          //   .get(`/admin/logs`)
+          //   .query(options)
+          //   .set({ 'Authorization': 'Bearer ' + token })
+          // return body
+          return { data: games, count: games.length }
+        }
+      },
+      mutations: {
+        setLoading(state, value) { state.loading = value },
+        setError(state, value) { state.error = value },
+        setUsername(state, value) { state.username = value },
+        setToken(state, value) { state.token = value },
+        setSideBar(state, value) { state.sidebar = value },
+        updateSetting(state, { name, value }) { Vue.set(state.settings, name, value) },
+        setSettings(state, data) { state.settings = data },
+      },
+      actions: {
+        toggleSideBar({ state, commit }) {
+          commit("setSideBar", !state.sidebar)
+        },
+        async loadSettings({ getters, commit }) {
+          const settings = await getters.getSettings()
+          commit("setSettings", settings)
+        },
+        async restoreSettings({ getters, commit }) {
+          const settings = await getters.restoreSettings()
+          commit("setSettings", settings)
+        },
+        signin({ commit }, { email, password }) {    
+          commit('setLoading', true)
+          setTimeout(()=> {
+            commit("setToken", Math.random().toString(24).slice(3))
+            commit("setUsername", email)
+            commit('setLoading', false )
+          }, 1000)
+        },
+        logout({ commit }) {
+          commit('setLoading', true)
+          setTimeout(()=> {
+            commit('setToken', "")
+            commit('setLoading', false)
+          }, 1000)
+        }
+      }
+    })
+  </script>
+
+  <script id="router">
+    const router = new VueRouter({
+      mode: "history",
+      base: "/admin/",
+      routes: [
+        { path: '/', component: Settings },
+        { path: '/tournaments', component: Tournaments },
+        { path: '/tournaments/create', component: TournamentForm },
+        { path: '/tournaments/:id', component: TournamentForm, props: true },
+        { path: '/logs', component: Logs },
+      ]
+    })
+  </script>
+
+  <script id="vue">
+    Vue.component('appbar', AppBar)
+    Vue.component('sidebar', SideBar)
+    Vue.component('loader', Loader)
+    Vue.component('layout', Layout)
+    Vue.component('login', Login)
+    Vue.component('error', ErrorMessage)
+
+    new Vue({
+      el: '#app',
+      router,
+      store,
+      vuetify: new Vuetify({
+        theme: {
+          themes: {
+            light: {
+              primary: "#388E3C", // "green darken-2"
+              secondary: "#512DA8", // "deep-purple darken-2"
+              accent: "#FFD600", // "yellow accent-4"
+            },
+          },
+        },
+      }),
+    })
+  </script>
+
+</body>
+
+</html>
