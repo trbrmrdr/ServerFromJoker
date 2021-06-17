@@ -19,8 +19,8 @@ export const config = {
   redisUrl: $("REDIS_ENDPOINT"),
 
   // sendgrid
-  // sendgridApiKey: $("SENDGRID_API_KEY"), 
-  // sendgridEmailFrom: $("SENDGRID_EMAIL_FROM"), 
+  // sendgridApiKey: $("SENDGRID_API_KEY", String, ""), 
+  // sendgridEmailFrom: $("SENDGRID_EMAIL_FROM", String, ""), 
 
 } as const
 
