@@ -670,22 +670,48 @@ const GameResult = {
       </v-btn>
       <span>Логи игры c id: {{id}}</span>
     </h1>
+    <v-data-table
+      :headers="headers"
+      :items="logs"
+      :options.sync="options"
+
+      :loading="loading"
+    >
+    </v-data-table>
   </div>
 </script>
 <script id="logs">
 const Logs = {
   template: '#logs',
   data: () => ({
-
+    loading: false,
+    headers: [
+      { text: 'Время', value: 'time' },
+      { text: 'Действие', value: 'action' },
+      { text: 'Параметры', value: 'data' },
+    ],
+    options: {},
+    logs: [],
+    count: 0,
   }),
-  props: ["id"],
   computed: {
+    ...Vuex.mapGetters(["getGameLogs"]),
   },
+  props: ["id"],
   methods: {
     back() {
       this.$router.go(-1)
     },
-  }
+  },
+  watch: {
+    id: {
+      immediate: true,
+      async handler (value, oldVal) {
+        const { logs } = await this.getGameLogs(this.id)
+        this.logs = logs
+      }
+    },
+  },
 }
 </script>
 
@@ -1411,13 +1437,14 @@ const Logs = {
           const game = games.find((item) => item.id === Number(id))
           return { result: fakeResult(), players: game.players }
         },
-        getGameLogs: ({ token }) => async (options) => {
+        getGameLogs: ({ token }) => async (id) => {
           // const { body } = await superagent
           //   .get(`/admin/logs`)
           //   .query(options)
           //   .set({ 'Authorization': 'Bearer ' + token })
           // return body
-          return { result: fakeLogs() }
+          const game = games.find((item) => item.id === Number(id))
+          return { result: fakeLogs(), game }
         },
       },
       mutations: {
