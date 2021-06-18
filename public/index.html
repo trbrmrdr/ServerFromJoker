@@ -520,201 +520,200 @@
     }
   </script>
 
-<script type="text/x-template" id="gameResult">
-  <v-container>
-    <h1 class="font-weight-light mb-4"> 
-      <v-btn
-        class="mx-2"
-        dark
-        fab
-        small
-        color="primary lighten-2"
-        @click="back"
-      >
-        <v-icon dark>
-          mdi-arrow-left
-        </v-icon>
-      </v-btn>
-      <span>Результат игры c id: {{id}}</span>
-    </h1>
-    <v-row no-gutters >
-      <v-col cols="1">
-      </v-col>
-      <v-col v-for="p in 4" :key="p">
-        <v-card
-          class="pa-2"
-          outlined
-          tile
+  <script type="text/x-template" id="gameResult">
+    <v-container>
+      <h1 class="font-weight-light mb-4"> 
+        <v-btn
+          class="mx-2"
+          dark
+          fab
+          small
+          color="primary lighten-2"
+          @click="back"
         >
-          <v-chip
-            color="secondary lighten-2"
-            class="ml-0 mr-2"
+          <v-icon dark>
+            mdi-arrow-left
+          </v-icon>
+        </v-btn>
+        <span>Результат игры c id: {{id}}</span>
+      </h1>
+      <v-row no-gutters >
+        <v-col cols="1">
+        </v-col>
+        <v-col v-for="p in 4" :key="p">
+          <v-card
+            class="pa-2"
+            outlined
+            tile
           >
-           {{ p }}
-          </v-chip>
-          {{ players[p-1] }}
-        </v-card>
-      </v-col>
-
-    </v-row>
-    <v-row no-gutters v-for="r in 29" :key="r" align="center">
-      <v-col cols="1"  >
-        <span class="float-right pr-4">{{ rowLable(r) }}</span>
-      </v-col>
-      <v-col v-for="p in 4" :key="p" >
-        <v-card
-          class="pa-2"
-          outlined
-          tile
-          :class="showChip(r) ? '' : 'grey lighten-5'"
-        >
-          <v-card-text class="pt-0 pb-0 text-center">
             <v-chip
-              v-if="showChip(r)"
-              color="green lighten-4"
-              class="ml-0 mr-2 black--text float-left"
-              label
-              small 
+              color="secondary lighten-2"
+              class="ml-0 mr-2"
             >
-              {{ rowDataChip(r,p) }}
+            {{ p }}
             </v-chip>
-      
-            <span :class="showChip(r) ? '' : 'font-weight-bold' ">{{ rowData(r,p) }}</span>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
-</script>
-<script id="gameResult">
-const GameResult = {
-  template: '#gameResult',
-  props: ["id"],
-  data: () => ({
-    result: [],
-    players: []
-  }),
-  watch: {
-    id: {
-      immediate: true,
-      async handler (value, oldVal) {
-        const { result, players } = await this.getGameResult(this.id)
-        this.players = players
-        this.result = result
-      }
+            {{ players[p-1] }}
+          </v-card>
+        </v-col>
+
+      </v-row>
+      <v-row no-gutters v-for="r in 29" :key="r" align="center">
+        <v-col cols="1"  >
+          <span class="float-right pr-4">{{ rowLable(r) }}</span>
+        </v-col>
+        <v-col v-for="p in 4" :key="p" >
+          <v-card
+            class="pa-2"
+            outlined
+            tile
+            :class="showChip(r) ? '' : 'grey lighten-5'"
+          >
+            <v-card-text class="pt-0 pb-0 text-center">
+              <v-chip
+                v-if="showChip(r)"
+                color="green lighten-4"
+                class="ml-0 mr-2 black--text float-left"
+                label
+                small 
+              >
+                {{ rowDataChip(r,p) }}
+              </v-chip>
+        
+              <span :class="showChip(r) ? '' : 'font-weight-bold' ">{{ rowData(r,p) }}</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </script>
+  <script id="gameResult">
+  const GameResult = {
+    template: '#gameResult',
+    props: ["id"],
+    data: () => ({
+      result: [],
+      players: []
+    }),
+    watch: {
+      id: {
+        immediate: true,
+        async handler (value, oldVal) {
+          const { result, players } = await this.getGameResult(this.id)
+          this.players = players
+          this.result = result
+        }
+      },
     },
-  },
-  computed: {
-    ...Vuex.mapGetters(["getGameResult"]),
-  },
-  methods: {
-    back() {
-      this.$router.go(-1)
+    computed: {
+      ...Vuex.mapGetters(["getGameResult"]),
     },
-    showChip(index) {
-      return ![9, 14, 23, 28, 29].includes(index)
-    },
-    rowLable(index) {
-      if ([9, 14, 23, 28, 29].includes(index)) {
-        return ""
+    methods: {
+      back() {
+        this.$router.go(-1)
+      },
+      showChip(index) {
+        return ![9, 14, 23, 28, 29].includes(index)
+      },
+      rowLable(index) {
+        if ([9, 14, 23, 28, 29].includes(index)) {
+          return ""
+        }
+        if (index < 9) {
+          return index
+        } else if (index < 14) {
+          return 9
+        } else if (index < 23) {
+          return Math.abs(index - 23)
+        } else {
+          return 9
+        }
+      },
+      rowDataChip(index, player) {
+        if (!this.result.length) {
+          return ""
+        }
+        if ([9, 14, 23, 28, 29].includes(index)) {
+          return ""
+        }
+        return this.result[index][player-1][0]
+      },
+      rowData(index, player) {
+        if (!this.result.length) {
+          return ""
+        }
+        if ([9, 14, 23, 28].includes(index)) {
+          return this.result[index][player-1]
+        }
+        if (index === 29) {
+          return this.result[0][player-1]
+        }
+        return this.result[index][player-1][1]
       }
-      if (index < 9) {
-        return index
-      } else if (index < 14) {
-        return 9
-      } else if (index < 23) {
-        return Math.abs(index - 23)
-      } else {
-        return 9
-      }
-    },
-    rowDataChip(index, player) {
-      if (!this.result.length) {
-        return ""
-      }
-      if ([9, 14, 23, 28, 29].includes(index)) {
-        return ""
-      }
-      return this.result[index][player-1][0]
-    },
-    rowData(index, player) {
-      if (!this.result.length) {
-        return ""
-      }
-      if ([9, 14, 23, 28].includes(index)) {
-        return this.result[index][player-1]
-      }
-      if (index === 29) {
-        return this.result[0][player-1]
-      }
-      return this.result[index][player-1][1]
     }
   }
-}
-</script>
+  </script>
 
-<script type="text/x-template" id="logs">
-  <div>
-    <h1 class="font-weight-light mb-4"> 
-      <v-btn
-        class="mx-2"
-        dark
-        fab
-        small
-        color="primary lighten-2"
-        @click="back"
+  <script type="text/x-template" id="logs">
+    <div>
+      <h1 class="font-weight-light mb-4"> 
+        <v-btn
+          class="mx-2"
+          dark
+          fab
+          small
+          color="primary lighten-2"
+          @click="back"
+        >
+          <v-icon dark>
+            mdi-arrow-left
+          </v-icon>
+        </v-btn>
+        <span>Логи игры c id: {{id}}</span>
+      </h1>
+      <v-data-table
+        :headers="headers"
+        :items="logs"
+        :options.sync="options"
+
+        :loading="loading"
       >
-        <v-icon dark>
-          mdi-arrow-left
-        </v-icon>
-      </v-btn>
-      <span>Логи игры c id: {{id}}</span>
-    </h1>
-    <v-data-table
-      :headers="headers"
-      :items="logs"
-      :options.sync="options"
-
-      :loading="loading"
-    >
-    </v-data-table>
-  </div>
-</script>
-<script id="logs">
-const Logs = {
-  template: '#logs',
-  data: () => ({
-    loading: false,
-    headers: [
-      { text: 'Время', value: 'time' },
-      { text: 'Действие', value: 'action' },
-      { text: 'Параметры', value: 'data' },
-    ],
-    options: {},
-    logs: [],
-    count: 0,
-  }),
-  computed: {
-    ...Vuex.mapGetters(["getGameLogs"]),
-  },
-  props: ["id"],
-  methods: {
-    back() {
-      this.$router.go(-1)
+      </v-data-table>
+    </div>
+  </script>
+  <script id="logs">
+  const Logs = {
+    template: '#logs',
+    data: () => ({
+      loading: false,
+      headers: [
+        { text: 'Время', value: 'time' },
+        { text: 'Действие', value: 'action' },
+        { text: 'Параметры', value: 'data' },
+      ],
+      options: {},
+      logs: [],
+      count: 0,
+    }),
+    computed: {
+      ...Vuex.mapGetters(["getGameLogs"]),
     },
-  },
-  watch: {
-    id: {
-      immediate: true,
-      async handler (value, oldVal) {
-        const { logs } = await this.getGameLogs(this.id)
-        this.logs = logs
-      }
+    props: ["id"],
+    methods: {
+      back() {
+        this.$router.go(-1)
+      },
     },
-  },
-}
-</script>
-
+    watch: {
+      id: {
+        immediate: true,
+        async handler (value, oldVal) {
+          const { logs } = await this.getGameLogs(this.id)
+          this.logs = logs
+        }
+      },
+    },
+  }
+  </script>
 
   <script type="text/x-template" id="settings">
     <div>
@@ -1297,7 +1296,7 @@ const Logs = {
         error: "",
         loading: false,
         sidebar: true,
-        token: "1",
+        token: "",
         username: "admin",
         menu: [
           { title: "Настройки", href: "/", icon: "mdi-cog-outline" },
