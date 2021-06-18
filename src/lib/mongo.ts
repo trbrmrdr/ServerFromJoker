@@ -1,6 +1,7 @@
 import { Db, MongoClient, MongoClientOptions, ObjectId, Collection } from 'mongodb'
 
 import { config } from '../config'
+import { IGame, ISetting, ITournament, IUser } from '../schemas'
 
 export * from 'mongodb'
 
@@ -19,17 +20,16 @@ export interface Collections {
   Settings: Collection
 }
 
-
 export function collections(): Collections {
   if (!db) {
     throw new Error("MongoDb not connected")
   }
 
   return {
-    Users: db.collection("users"),
-    Games: db.collection("games"),
-    Settings: db.collection("settings"),
-    Tournaments: db.collection("tournaments"),
+    Users: db.collection<IUser>("users"),
+    Games: db.collection<IGame>("games"),
+    Settings: db.collection<ISetting>("settings"),
+    Tournaments: db.collection<ITournament>("tournaments"),
   } 
 }
 
