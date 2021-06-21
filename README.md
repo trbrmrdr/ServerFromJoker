@@ -1,4 +1,4 @@
-# Stasher Restful Api
+# Joker Restful Api
 
 ## How to use ?
 
