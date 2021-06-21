@@ -34,11 +34,14 @@
     "fastify-static": "^4.2.2",
     "fastify-swagger": "^4.7.0",
     "ioredis": "^4.27.6",
+    "magx": "^0.4.7",
+    "magx-client": "^0.7.1",
     "mongodb": "^3.6.9",
+    "mosx": "^0.8.8",
     "pino": "^6.11.3",
     "pino-pretty": "^4.8.0",
-    "ws": "^7.4.6",
-    "typescript": "^4.3.2"
+    "typescript": "^4.3.2",
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "@types/agenda": "^4.1.0",

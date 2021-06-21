@@ -6,8 +6,10 @@
   <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Joker Admin Console</title>
+  <link href="http://selfthinker.github.io/CSS-Playing-Cards/cards.css" rel="stylesheet">
+  <link href="/public/styles.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <title>Joker Game</title>
 </head>
 
 <body>
@@ -20,12 +22,13 @@
   <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/superagent/4.1.0/superagent.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
+  <script src="/magx" type="text/javascript"></script>
 
   <script type="text/x-template" id="layout">
     <v-app >
       <div v-if="token">
         <appbar></appbar>
-        <sidebar></sidebar>
         <v-main>
           <v-container class="px-4 py-0 fill-height" fluid>
             <v-row class="fill-height">
@@ -49,7 +52,11 @@
     const Layout = {
       template: "#layout",
       computed: {
-        ...Vuex.mapState(["token"])
+        ...Vuex.mapState(["token"]),
+      },
+      mounted() {
+        const token = sessionStorage.getItem("token")
+        return this.$store.dispatch("verifyToken", token)
       }
     }
   </script>
@@ -71,1039 +78,28 @@
     }
   </script>
 
-  <script type="text/x-template" id="sidebar">
-    <v-navigation-drawer v-model="sidebarMenu" app floating :permanent="$vuetify.breakpoint.mdAndUp">
-      <v-list dense color="primary" dark>
-        <v-list-item>
-          <v-img src="/public/logo.png" max-height="48" max-width="60" class="mr-4"></v-img>
-          <v-list-item-content>
-            <v-list-item-title>
-              <h3 class="">Joker Console</h3>
-            </v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-      <v-list-item class="px-2">
-        <v-list-item-avatar>
-          <v-icon>mdi-account-outline</v-icon>
-        </v-list-item-avatar>
-        <v-list-item-content class="text-truncate">
-          {{ username }}
-        </v-list-item-content>
-
-      </v-list-item>
-      <v-divider></v-divider>
-      <v-list>
-        <v-list-item v-for="item in items" :key="item.title" link :to="item.href">
-          <v-list-item-icon>
-            <v-icon color="primary">{{ item.icon }}</v-icon>
-          </v-list-item-icon>
-          <v-list-item-content>
-            <v-list-item-title class="primary--text">{{ item.title }}</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-  </script>
-  <script id="sidebar">
-    const SideBar = {
-      template: '#sidebar',
-      computed: {
-        username() { return this.$store.state.username || "Админ" },
-        items() { return this.$store.state.menu || [] },
-        sidebarMenu: {
-          get() { return this.$store.state.sidebar },
-          set(value) { this.$store.commit("setSideBar", value) }
-        }
-      }
-    }
-  </script>
-
-  <script type="text/x-template" id="loader">
-    <v-dialog v-model="loading" persistent width="120">
-      <v-card>
-        <v-card-text class="text-xs-center">
-          <v-progress-circular :size="70" indeterminate class="secondary--text"/>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
-  </script>
-  <script id="loader">
-    const Loader = {
-      template: "#loader",
-      computed: {
-        loading: {
-          get() { return this.$store.state.loading },
-          set(value) { this.$store.commit("setLoading", value) }
-        }
-      }
-    }
-  </script>
-
-  <script type="text/x-template" id="tournaments">
-    <div>
-      <h1 class="font-weight-light mb-0">Турниры:</h1>
-      <v-toolbar dense flat dark color="primary lighten-2" >
-        <v-text-field
-          v-model="search"
-          append-icon="mdi-magnify"
-          label="Поиск"
-          class="mx-4"
-          single-line
-          clearable
-          hide-details
-        ></v-text-field>
-        <v-btn color="primary" class="ml-2" to="/tournaments/create">
-          <v-icon left dark> mdi-plus-thick </v-icon>
-          Создать новый
-        </v-btn>
-      </v-toolbar>
-      <v-data-table
-        :headers="headers"
-        :items="tournaments"
-        :options.sync="options"
-        :server-items-length="count"
-        :loading="loading"
-        item-key="_id"
-      >
-        <template v-slot:item.avatar="{ item }">
-          <v-avatar class="grey lighten-4">
-            <img
-              v-if="item.profile && item.profile.avatar"
-              :src="item.profile.avatar"
-            />
-            <v-icon v-else> mdi-account-outline </v-icon>
-          </v-avatar>
-        </template>
-        <template v-slot:item.startTime="{ item }">
-          {{ textDate(item.startTime) }}
-        </template>
-        <template v-slot:item.repeatEvery="{ item }">
-          {{ textDuration(item.repeatEvery) }}
-        </template>
-        <template v-slot:item.requiredPlayers="{ item }">
-          {{ item.requiredPlayers + "%" }}
-        </template>
-        <template v-slot:item.autoDuplicate="{ item }">
-          <v-checkbox readonly
-            v-model="item.autoDuplicate"
-          ></v-checkbox>
-        </template>
-        <template v-slot:item.actions="{ item }">
-          <v-btn color="accent" :to="editLink(item.id)" small fab><v-icon>mdi-square-edit-outline</v-icon><span hidden>Изменить</span></v-btn>
-          <v-btn @click="selected = item; dialog = true" small fab><v-icon>mdi-delete</v-icon><span hidden>Удалить</span></v-btn>
-        </template>
-      </v-data-table>
-      <v-dialog
-        v-model="dialog"
-        max-width="290"
-      >
-        <v-card>
-          <v-card-title class="text-h5">
-            Удалить турнир "{{selected ? selected.name : ""}}"?
-          </v-card-title>
-
-          <v-card-actions>
-            <v-spacer></v-spacer>
-
-            <v-btn text @click="dialog = false">
-              Отмена
-            </v-btn>
-
-            <v-btn color="red darken-1" text  @click="deleteSelected()">
-              Удалить
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </div>
-  </script>
-  <script id="tournaments">
-    const Tournaments = {
-      data: () => ({
-        dialog: false,
-        selected: null,
-        search: '',
-        loading: false,
-        headers: [
-          // { text: 'Id', value: 'id' },
-          { text: 'Название', value: 'name' },
-          { text: 'Кол-во игроков', value: 'maxPlayers' },
-          { text: 'Призовой фонд', value: 'totalAward' },
-          { text: 'Время начала', value: 'startTime', sortable: false },
-          { text: 'Многократный, повтор', value: 'repeatEvery' },
-          { text: '% участников для начала', value: 'requiredPlayers' },
-          { text: 'Авто создание нового', value: 'autoDuplicate' },
-          { text: 'Действия', value: "actions" }
-        ],
-        options: {},
-        tournaments: [],
-        count: 0,
-      }),
-      computed: {
-        ...Vuex.mapGetters(["getTournaments", "deleteTournament", "textDuration", "textDate"]),
-        editLink() { return (id) => `/tournaments/${id}`}
-      },
-      methods: {
-
-        async deleteSelected() {
-          this.loading = true
-          this.dialog = false
-          try {
-            const data = await this.deleteTournament(this.selected.id)
-            if (data && data.success) {
-              await this.refresh()
-            }
-          } catch (error) {
-            console.log(error)
-          }
-          this.loading = false
-        },
-        async refresh() {
-          this.loading = true
-
-          let { itemsPerPage, sortBy, sortDesc, page, ...rest } = this.options
-
-          try {
-            const { data, count } = await this.getTournaments({
-              limit: itemsPerPage === -1 ? 0 : itemsPerPage,
-              filter: this.search,
-              sort: sortDesc[0] === true ? 1 : -1,
-              sortBy: sortBy[0],
-              page: page - 1
-            })
-            
-            this.tournaments = data
-            this.count = count
-          } catch (error) {
-            console.log(error)
-          }
-          this.loading = false
-        },
-      },
-      watch: {
-        options: {
-          handler() { this.refresh() },
-          deep: true,
-        },
-        search() {
-          this.refresh()
-        }
-      },
-      template: "#tournaments"
-    }
-  </script>
-
-  <script type="text/x-template" id="history">
-    <div>
-      <h1 class="font-weight-light mb-0">История игр:</h1>
-      <v-toolbar flat color="primary lighten-2" class="pt-4" >
-        <v-select
-          ref="filter"
-          v-model="search"
-          :items="filters"
-          label="Фильтры"
-          multiple
-        >
-          <template v-slot:selection="{ item, index }">
-            <v-chip>
-              <span>{{ selectedItemText(item) }}</span>
-            </v-chip>
-          </template>
-          <template v-slot:item="{ item, index }">
-            <v-list-item readonly dense>
-              <v-list-item-action @click="item.selected = !item.selected">
-                <v-icon>
-                  {{ item.selected ? 'mdi-close-box' : 'mdi-checkbox-blank-outline'}}
-                </v-icon>
-              </v-list-item-action>
-              <v-list-item-content>
-                <v-col cols="3">
-                  <span>{{ item.text }}:</span>
-                </v-col>
-                <v-col v-if="item.type === 'text'" cols="9">
-                  <v-text-field dense v-model="item.data" hide-details @change="updateItem(item)" />
-                </v-col>
-                <v-col v-if="item.type === 'date'" cols="3" @change="updateItem(item)">
-                  <v-text-field dense v-model="item.from" hide-details type="date" />
-                </v-col>
-                <v-col v-if="item.type === 'date'" cols="3">
-                  <v-checkbox dense hide-details
-                    v-model="item.interval"
-                    label="Интервал"
-                  ></v-checkbox>
-                </v-col>
-                <v-col v-if="item.type === 'date'" cols="3"  >
-                  <v-text-field dense v-model="item.to" :disabled="!item.interval" hide-details type="date"/>
-                </v-col>
-                <v-col v-if="item.type === 'select'" cols="9">
-                  <v-checkbox dense hide-details @change="updateItem(item)"
-                    v-model="item.data"
-                    label="Да"
-                    prefix="Нет"
-                  ></v-checkbox>
-                </v-col>
-              </v-list-item-content>
-            </v-list-item>
-          </template>
-          <template v-slot:prepend-item>
-            <v-list-item ripple readonly>
-
-              <v-list-item-content>
-                <v-list-item-title>
-                  Выбранные фильтры:
-                </v-list-item-title>
-
-              </v-list-item-content>
-
-              <v-btn class="mr-3" @click="clear()">Очистить</v-btn>
-              <v-btn @click.stop="apply()">Применить</v-btn>
-
-            </v-list-item>
-            <v-divider class="mt-2"></v-divider>
-          </template>
-        </v-select>
-      </v-toolbar>
-      <v-data-table
-        :headers="headers"
-        :items="logs"
-        :options.sync="options"
-
-        :loading="loading"
-        item-key="id"
-      >
-        <template v-slot:item.players="{ item }">
-          {{ item.players.join(", ") }}
-        </template>
-        <template v-slot:item.params="{ item }">
-          {{ item.type === "normal" ? `пароль: ${item.params.password || ""}, цена входа: ${item.params.bet || 0}` : `номер стола: ${item.params.tableIndex}` }}
-        </template>
-        <template v-slot:item.createdAt="{ item }">
-          {{ textDate(item.createdAt) }}
-        </template>
-        <template v-slot:item.startedAt="{ item }">
-          {{ textDate(item.startedAt) }}
-        </template>
-        <template v-slot:item.result="{ item }">
-          <v-btn text :to="`/history/${item.id}/result`">
-            <v-icon>
-              mdi-text-box-check-outline
-            </v-icon>
-          </v-btn>
-        </template>
-        <template v-slot:item.logs="{ item }">
-          <v-btn text :to="`/history/${item.id}/logs`">
-            <v-icon>
-              mdi-shoe-print
-            </v-icon>
-          </v-btn>
-        </template>
-      </v-data-table>
-    </div>
-  </script>
-  <script id="history">
-    const History = {
-      data: () => ({
-        search: [],
-        filters: [
-        {
-            text: "Назнаие", 
-            fiels: "name",
-            type: "text",
-            data: "",
-            selected: false,
-          },
-          { 
-            text: "Дата начала",
-            field: "startedAt",
-            type: "date",
-            from: "",
-            to: "",
-            interval: false,
-            selected: false,
-          }, 
-          { 
-            text: "Турнир",
-            field: "type",
-            type: "select",
-            data: false,
-            selected: false,
-          }, 
-          { 
-            text: "Id игрока",
-            field: "players",
-            type: "text",
-            data: "",
-            selected: false
-          }
-        ],
-        loading: false,
-        headers: [
-          { text: 'Id', value: 'id' },
-          // { text: 'Уникальный Id', value: 'searchId' },
-          { text: 'Дата создания', value: 'createdAt' },
-          { text: 'Дата начала игры', value: 'startedAt' },
-          { text: 'Участинки', value: 'players' },
-          { text: 'Тип игры', value: 'type' },
-          { text: 'Параметры', value: 'params' },
-          { text: 'Счет', value: 'result' },
-          { text: 'Список ходов', value: 'logs' },
-        ],
-        options: {},
-        logs: [],
-        count: 0,
-      }),
-      computed: {
-        ...Vuex.mapGetters(["textDate", "getHistory"]),
-      },
-      methods: {
-        selectedItemText(item) {
-          switch (item.type) {
-            case "text": return `${item.text}: ${item.data}`
-            case "date": return item.interval 
-              ? `${item.text}: ${item.from} - ${item.to}`
-              : `${item.text}: ${item.from}`
-            case "select": return `${item.text}: ${item.data ? "Да" : "Нет"}`
-          }
-          return ""
-        },
-        apply() {
-          this.search = []
-          this.filters.forEach((item) => {
-            if (item.selected) {
-              this.search.push(item)
-            }
-          })
-          this.$refs.filter.isMenuActive = false;
-        },
-        clear() {
-          this.search = []
-          this.$refs.filter.isMenuActive = false;
-        },
-        updateItem(item) {
-          if (item.type === "date") {
-            item.selected = !!item.from
-          } else {
-            item.selected = !!item.data || item.type === "select"
-          }
-        },
-        updateLogs() {
-          this.loading = true
-
-          let { itemsPerPage, sortBy, sortDesc, page, ...rest } = this.options
-
-          return this.getHistory({
-            limit: itemsPerPage === -1 ? 0 : itemsPerPage,
-            filter: this.search,
-            sort: sortDesc[0] === true ? 1 : -1,
-            sortBy: sortBy[0],
-            page: page - 1
-          })
-            .then(({ data, count }) => {
-              this.logs = data
-              this.count = count
-              this.loading = false
-            })
-            .catch((e) => {
-              this.loading = false
-              console.log(e)
-            })
-        },
-      },
-      watch: {
-        options: {
-          handler() { this.updateLogs() },
-          deep: true,
-        },
-      },
-      template: "#history"
-    }
-  </script>
-
-  <script type="text/x-template" id="gameResult">
-    <v-container>
-      <h1 class="font-weight-light mb-4"> 
-        <v-btn
-          class="mx-2"
-          dark
-          fab
-          small
-          color="primary lighten-2"
-          @click="back"
-        >
-          <v-icon dark>
-            mdi-arrow-left
-          </v-icon>
-        </v-btn>
-        <span>Результат игры c id: {{id}}</span>
-      </h1>
-      <v-row no-gutters >
-        <v-col cols="1">
-        </v-col>
-        <v-col v-for="p in 4" :key="p">
-          <v-card
-            class="pa-2"
-            outlined
-            tile
-          >
-            <v-chip
-              color="secondary lighten-2"
-              class="ml-0 mr-2"
-            >
-            {{ p }}
-            </v-chip>
-            {{ players[p-1] }}
-          </v-card>
-        </v-col>
-
-      </v-row>
-      <v-row no-gutters v-for="r in 29" :key="r" align="center">
-        <v-col cols="1"  >
-          <span class="float-right pr-4">{{ rowLable(r) }}</span>
-        </v-col>
-        <v-col v-for="p in 4" :key="p" >
-          <v-card
-            class="pa-2"
-            outlined
-            tile
-            :class="showChip(r) ? '' : 'grey lighten-5'"
-          >
-            <v-card-text class="pt-0 pb-0 text-center">
-              <v-chip
-                v-if="showChip(r)"
-                color="green lighten-4"
-                class="ml-0 mr-2 black--text float-left"
-                label
-                small 
-              >
-                {{ rowDataChip(r,p) }}
-              </v-chip>
-        
-              <span :class="showChip(r) ? '' : 'font-weight-bold' ">{{ rowData(r,p) }}</span>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </script>
-  <script id="gameResult">
-  const GameResult = {
-    template: '#gameResult',
-    props: ["id"],
-    data: () => ({
-      result: [],
-      players: []
-    }),
-    watch: {
-      id: {
-        immediate: true,
-        async handler (value, oldVal) {
-          const { result, players } = await this.getGameResult(this.id)
-          this.players = players
-          this.result = result
-        }
-      },
-    },
-    computed: {
-      ...Vuex.mapGetters(["getGameResult"]),
-    },
-    methods: {
-      back() {
-        this.$router.go(-1)
-      },
-      showChip(index) {
-        return ![9, 14, 23, 28, 29].includes(index)
-      },
-      rowLable(index) {
-        if ([9, 14, 23, 28, 29].includes(index)) {
-          return ""
-        }
-        if (index < 9) {
-          return index
-        } else if (index < 14) {
-          return 9
-        } else if (index < 23) {
-          return Math.abs(index - 23)
-        } else {
-          return 9
-        }
-      },
-      rowDataChip(index, player) {
-        if (!this.result.length) {
-          return ""
-        }
-        if ([9, 14, 23, 28, 29].includes(index)) {
-          return ""
-        }
-        return this.result[index][player-1][0]
-      },
-      rowData(index, player) {
-        if (!this.result.length) {
-          return ""
-        }
-        if ([9, 14, 23, 28].includes(index)) {
-          return this.result[index][player-1]
-        }
-        if (index === 29) {
-          return this.result[0][player-1]
-        }
-        return this.result[index][player-1][1]
-      }
-    }
-  }
-  </script>
-
-  <script type="text/x-template" id="logs">
-    <div>
-      <h1 class="font-weight-light mb-4"> 
-        <v-btn
-          class="mx-2"
-          dark
-          fab
-          small
-          color="primary lighten-2"
-          @click="back"
-        >
-          <v-icon dark>
-            mdi-arrow-left
-          </v-icon>
-        </v-btn>
-        <span>Логи игры c id: {{id}}</span>
-      </h1>
-      <v-data-table
-        :headers="headers"
-        :items="logs"
-        :options.sync="options"
-
-        :loading="loading"
-      >
-      </v-data-table>
-    </div>
-  </script>
-  <script id="logs">
-  const Logs = {
-    template: '#logs',
-    data: () => ({
-      loading: false,
-      headers: [
-        { text: 'Время', value: 'time' },
-        { text: 'Действие', value: 'action' },
-        { text: 'Параметры', value: 'data' },
-      ],
-      options: {},
-      logs: [],
-      count: 0,
-    }),
-    computed: {
-      ...Vuex.mapGetters(["getGameLogs"]),
-    },
-    props: ["id"],
-    methods: {
-      back() {
-        this.$router.go(-1)
-      },
-    },
-    watch: {
-      id: {
-        immediate: true,
-        async handler (value, oldVal) {
-          const { logs } = await this.getGameLogs(this.id)
-          this.logs = logs
-        }
-      },
-    },
-  }
-  </script>
-
-  <script type="text/x-template" id="settings">
-    <div>
-      <h1 class="font-weight-light mb-0">Настройки:</h1>
-
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Длительность ожидания игроков за столом
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="waitTime" suffix="сек"/>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Длительность хода
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="turnTime" suffix="сек"/>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Длительность ожидания возврата в игру в случае разъединения
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="reconnectionTimeout" suffix="сек"/>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Лимит повторных подключений при разъединении
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="reconnectionLimit" suffix="кол-во" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Задержка хода, в случае разъединения
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="reconnectionDelay" suffix="сек"/>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12">
-          <v-btn @click="restore">Восстановить</v-btn>
-          <v-btn color="primary" @click="save" :disabled="!updated">Сохранить</v-btn>
-        </v-col>
-      </v-row>
-    </div>
-  </script>
-  <script id="settings">
-  const Settings = {
-    template: '#settings',
-    data: () => ({
-      updates: {},
-      updated: false,
-      
-    }),
-    async mounted() {
-      await this.$store.dispatch("loadSettings")
-    },
-    computed: {
-      token() { return this.$store.state.token },
-      settings() { return this.$store.state.settings },
-      ...Vuex.mapGetters(["updateSettings"]),
-      waitTime: {
-        get() { return this.settings.waitTime },
-        set(value) { this.updateSetting("waitTime", value) }
-      },
-      turnTime: {
-        get() { return this.settings.turnTime },
-        set(value) { this.updateSetting("turnTime", value) }
-      },
-      reconnectionTimeout: {
-        get() { return this.settings.reconnectionTimeout },
-        set(value) { this.updateSetting("reconnectionTimeout", value) }
-      },
-      reconnectionLimit: {
-        get() { return this.settings.reconnectionLimit },
-        set(value) { this.updateSetting("reconnectionLimit", value) }
-      },
-      reconnectionDelay: {
-        get() { return this.settings.reconnectionDelay },
-        set(value) { this.updateSetting("reconnectionDelay", value) }
-      }
-    },
-    methods: {
-      async save() {
-        await this.updateSettings(this.updates)
-        this.updates = {}
-        this.updated = false
-      },
-      updateSetting(name, value) {
-        this.updates[name] = value
-        this.updated = true
-        this.$store.commit("updateSetting", { name, value })
-      },
-      async restore() {
-        await this.$store.dispatch("restoreSettings")
-        this.updates = {}
-        this.updated = false
-      }
-    }
-  }
-  </script>
-
-  <script type="text/x-template" id="tournament-form">
-    <v-container>
-
-      <h1 v-if="id" class="font-weight-light mb-0">Редактировать турнир</h1>
-      <h1 v-else class="font-weight-light mb-0">Создать турнир</h1>
-
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Название турнира
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.name" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Кол-во игроков
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.maxPlayers" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Цена входа
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.registrationFee" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Призовой фонд
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.totalAward" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Распределение призового фонда
-        </v-col>
-        <v-col cols="2">
-          <v-text-field v-model="props.awardDistribution[0]" />
-        </v-col>
-        <v-col cols="2">
-          <v-text-field v-model="props.awardDistribution[1]" />
-        </v-col>
-        <v-col cols="2">
-          <v-text-field v-model="props.awardDistribution[2]" />
-        </v-col>
-        <v-col cols="2">
-          <v-text-field v-model="props.awardDistribution[3]" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4">
-          Время начала турнира
-        </v-col>
-        <v-col cols="4">
-          <v-menu
-            ref="startDateSelect"
-            v-model="startDateSelect"
-            :close-on-content-click="false"
-            transition="scale-transition"
-            offset-y
-            max-width="290px"
-            min-width="auto"
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-text-field
-                v-model="startDate"
-                prepend-icon="mdi-calendar"
-                readonly
-                v-bind="attrs"
-                v-on="on"
-              ></v-text-field>
-            </template>
-            <v-date-picker
-              v-model="startDate"
-              @input="startDateSelect = false"
-            ></v-date-picker>
-          </v-menu>
-        </v-col>
-        <v-col cols="4">
-          <v-text-field v-model="startTime" type="time"/>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4">
-          Многократный, повторять каждые:
-        </v-col>
-        <v-col cols="4">
-          <v-text-field v-model="repeatEvery" />
-        </v-col>
-        <v-col cols="4">
-          <v-select :items="repeatOptions" v-model="repeatOption" label="Интервал"></v-select>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Шаг следующего этапа
-        </v-col>
-        <v-col cols="4">
-          <v-text-field v-model="roundDuration" />
-        </v-col>
-        <v-col cols="4">
-          <v-select :items="repeatOptions" v-model="durationOption" label="Интервал"></v-select>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Шаг открытия на регистрацию
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.registrationDuration" suffix="сек" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Кол-во игроков для начала турнира
-        </v-col>
-        <v-col cols="8">
-          <v-text-field v-model="props.requiredPlayers" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="4" class="pt-6">
-          Авто открытие нового турнира
-        </v-col>
-        <v-col cols="8">
-          <v-checkbox
-            v-model="props.autoDuplicate"
-          ></v-checkbox>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12">
-          <v-btn to="/tournaments/">Отмена</v-btn>
-          <v-btn v-if="id" color="primary" @click="save">Сохранить</v-btn>
-          <v-btn v-else color="primary" @click="save">Создать</v-btn>
-        </v-col>
-      </v-row>
-    </v-container>
-  </script>
-  <script id="tournament-form">
-  const TournamentForm = {
-    template: '#tournament-form',
-    props: ["id"],
-    data: () => ({
-      startDateSelect: false,
-      repeatEvery: 0,
-      repeatOption: "",
-      repeatOptions: [ "", "минут", "часов", "дней", "недель" ],
-      roundDuration: 0,
-      durationOption: "",
-      startTime: "",
-      startDate: "",
-      props: {
-        name: "",
-        maxPlayers: 0,
-        registrationFee: 0,
-        totalAward: 0,
-        awardDistribution: [50, 30, 15, 5],
-        startTime: 0,
-        repeatEvery: 0,
-        roundDuration: 0,
-        registrationDuration: 0,
-        requiredPlayers: 0,
-        autoDuplicate: true,
-      }
-    }),
-    computed: {
-      ...Vuex.mapGetters(["createTournament", "getTournament", "updateTournament"]),
-    },
-    watch: {
-      id: {
-        immediate: true,
-        handler (value, oldVal) {
-          if (value) {
-            this.initData(value)
-          } else {
-            this.clearData()
-          }
-        }
-      },
-    },
-    methods: {
-      async initData (value) {
-        const data = await this.getTournament(value)
-        if (!data) {
-          this.clearData()
-          this.$router.push({ path: "/tournaments/"})
-        } else {
-          Vue.set(this.$data, "props", data)
-          const intervals = [ 1000*60*60*24*7, 1000*60*60*24, 1000*60*60, 1000*60,  0 ]
-          this.startDate = new Date(data.startTime).toISOString().slice(0,10)
-          this.startTime = new Date(data.startTime).toLocaleTimeString()
-          for (const interval of intervals) {
-            if (data.repeatEvery % interval === 0) {
-              this.repeatEvery = data.repeatEvery / interval
-              this.repeatOption = this.repeatOptions[4 - intervals.indexOf(interval)]
-              break
-            }
-          }
-          for (const interval of intervals) {
-            if (data.roundDuration % interval === 0) {
-              this.roundDuration = data.roundDuration / interval
-              this.durationOption = this.repeatOptions[4 - intervals.indexOf(interval)]
-              break
-            }
-          }
-        }
-      },
-      clearData() {
-        this.repeatEvery = 0
-        this.repeatOption = ""
-        this.roundDuration = 0
-        this.durationOption = ""
-        this.startTime = ""
-        this.props.name = "",
-        this.props.maxPlayers = 0
-        this.props.registrationFee = 0
-        this.props.totalAward = 0
-        this.props.awardDistribution = [50, 30, 15, 5]
-        this.props.startTime = 0
-        this.props.repeatEvery = 0
-        this.props.roundDuration = 0
-        this.props.registrationDuration = 0
-        this.props.requiredPlayers = 0
-        this.props.autoDuplicate = false
-      },
-      async save() {
-        const intervals = [ 1000*60*60*24*7, 1000*60*60*24, 1000*60*60, 1000*60,  0 ].reverse()
-        this.props.startTime = new Date(`${this.startDate} ${this.startTime}`).getTime()
-        this.props.repeatEvery = this.repeatEvery * intervals[this.repeatOptions.indexOf(this.repeatOption)]
-
-        this.props.roundDuration = this.roundDuration * intervals[this.repeatOptions.indexOf(this.durationOption)]
-        if (this.id) {
-          await this.updateTournament(this.id, this.props)
-        } else {
-          await this.createTournament(this.props)
-        }
-        this.$router.push({ path: "/tournaments/" })
-      }
-    }
-  }
-  </script>
-
   <script type="text/x-template" id="login">
     <v-dialog v-model="loginDialog" max-width="290" persistent>
       <v-card>
         <v-card-title class="headline">
-          Admin console authentication
+          Вход
         </v-card-title>
 
         <v-card-text>
           <v-container fluid>
             <v-row>
               <v-text-field
-                v-model="email"
-                name="email"
-                label="Enter email"
-              ></v-text-field>
-            </v-row>
-            <v-row>
-              <v-text-field
-                v-model="password"
-                :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
-                :type="show ? 'text' : 'password'"
-                name="password"
-                label="Enter password"
-                @click:append="show = !show"
+                v-model="id"
+                name="id"
+                label="Введите ваш id"
               ></v-text-field>
             </v-row>
           </v-container>  
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="green darken-1" :disabled="!password || !email" text @click="login" >
-            Login
+          <v-btn color="green darken-1" :disabled="!id" text @click="login" >
+            Войти
           </v-btn>
           <v-spacer></v-spacer>
         </v-card-actions>
@@ -1114,8 +110,7 @@
   const Login = {
     template: '#login',
     data: () => ({
-      email: "",
-      password: "",
+      id: "",
       show: false
     }),
     computed: {
@@ -1123,11 +118,15 @@
       loginDialog: {
         get() { return !this.token },
         set(value) { }
-      }
+      },
     },
     methods: {
-      login() {
-        this.$store.dispatch("signin", { email: this.email, password: this.password })
+      async login() {
+        try {
+          await this.$store.dispatch("authenticate", this.id)
+        } catch (error) {
+          console.log(error)
+        }
       }
     }
   }
@@ -1161,127 +160,350 @@
     }
   </script>
 
-  <script id="store">
-    let lastTournamentId = 3
-    const tournamentsData = [
-      { 
-        id: 1,
-        name: "1",
-        maxPlayers: 100,
-        registrationFee: 100,
-        totalAward: 1000,
-        awardDistribution: [50, 30, 15, 5],
-        startTime: Date.now() + 100000,
-        repeatEvery: 6 * 24 * 60 * 60 * 1000,
-        roundDuration: 60 * 60 * 1000,
-        registrationDuration: 24 * 60 * 60,
-        requiredPlayers: 70,
-        autoDuplicate: true,
+  <script type="text/x-template" id="main">    
+    <v-container>
+      <v-btn to="/game/create">
+        Создать комнату
+      </v-btn>
+      <v-list three-line>
+        <template v-for="(room, index) in rooms">
+          <v-list-item :key="room.roomId" @click="joinRoom(room)">
+            <v-list-item-content>
+              <v-list-item-title v-html="room.name + ': ' + room.options.name"></v-list-item-title>
+              <v-list-item-subtitle v-html="room"></v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </template>
+      </v-list>
+    </v-container>
+  </script>
+  <script id="main">
+    const Main = {
+      template: '#main',
+      computed: {
+        rooms() { return this.$store.getters.rooms },
       },
-      { 
-        id: 2,
-        name: "2",
-        maxPlayers: 200,
-        registrationFee: 150,
-        totalAward: 10000,
-        awardDistribution: [50, 30, 15, 5],
-        startTime: Date.now() + 100000,
-        repeatEvery: 7 * 24 * 60 * 60 * 1000,
-        roundDuration: 60 * 60 * 1000,
-        registrationDuration: 24 * 60 * 60,
-        requiredPlayers: 75,
-        autoDuplicate: true,
-      },
-      { 
-        id: 3,
-        name: "3",
-        maxPlayers: 300,
-        registrationFee: 200,
-        totalAward: 10000,
-        awardDistribution: [50, 30, 15, 5],
-        startTime: Date.now() + 100000,
-        repeatEvery: 48 * 60 * 60 * 1000,
-        roundDuration: 60 * 60 * 1000,
-        registrationDuration: 24 * 60 * 60,
-        requiredPlayers: 60,
-        autoDuplicate: false,
-      },
-    ]
-
-    const fakeResult = () => {
-
-      return [
-        [ 13.6, 10.4, 6, 2 ],
-        [[0, 50], [1, 100], [1, 0], [0, 50]],
-        [[1, 100], [1, 100], [1, 0], [0, 50]],
-        [[0, 50], [0, 10], [1, 100], [1, 100]],
-        [[1, 100], [2, 150], [0, 50], [3, 10]],
-        [[1, 100], [2, 150], [0, 50], [3, 10]],
-        [[0, 50], [0, 50], [3, 200], [3, 20]],
-        [[1, 20], [1, 100], [2, 150], [1, 100]],
-        [[1, 100], [2, 30], [1, 100], [2, 150]],
-        [ 4.9, 5.7, 7, 5 ],
-        [[3, 200], [2, 150], [3, 200], [2, 10]],
-        [[0, 50], [4, 20], [2, 50], [2, 150]],
-        [[0, 50], [3, 0], [2, 30], [3, 200]],
-        [[2, 150], [3, 200], [0, 10], [3, 200]],
-        [6.5, 3.7, 2.9, 5.6],
-        [[1, 100], [2, 30], [1, 100], [2, 150]],
-        [[1, 20], [1, 100], [2, 150], [1, 100]],
-        [[0, 50], [0, 50], [3, 200], [3, 20]],
-        [[1, 100], [2, 150], [0, 50], [3, 10]],
-        [[0, 50], [0, 10], [1, 100], [1, 100]],
-        [[1, 100], [1, 100], [1, 0], [0, 50]],
-        [[1, 100], [2, 150], [0, 50], [3, 10]],
-        [[0, 50], [1, 100], [1, 0], [0, 50]],
-        [ 4.9, 5.7, 7, 5 ],
-        [[3, 200], [2, 150], [3, 200], [2, 10]],
-        [[0, 50], [4, 20], [2, 50], [2, 150]],
-        [[0, 50], [3, 0], [2, 30], [3, 200]],
-        [[2, 150], [3, 200], [0, 10], [3, 200]],
-        [6.5, 3.7, 2.9, 5.6]
-      ]
-    }
-
-    const fakeLogs = () => {
-      return {
-
-      }
-    }
-
-    const fakeGame = () => {
-      const createdAt =  Date.now() - Math.random()*10000000
-      const startedAt = createdAt + 10000
-      const randomId = () => Math.random().toString(24).slice(3)
-      const type = ["normal", "tournament"][Math.floor(Math.random() * 2)]
-      const players = [randomId(), randomId(), randomId(), randomId()].sort((a, b) => a < b)
-      return {
-        id: lastLogId,
-        searchId: `${startedAt}:${players.join("|")}`,
-        name: randomId(),
-        createdAt,
-        startedAt,
-        players,
-        type,
-        params: type === "normal" ? {
-          password: randomId(),
-          bet: Math.floor(Math.random() * 1000),
-        } : {
-          tournamentId: randomId(),
-          tableIndex: Math.floor(Math.random() * 10),
+      methods: {
+        joinRoom(room) { 
+          console.log('join room', room)
         },
-        result: [],
-        logs: [],
       }
     }
+    
+  </script>
 
-    const games = []
-    let lastLogId = 0
-
-    for (; lastLogId < 20; lastLogId++) {
-      games.push(fakeGame())
+  <script type="text/x-template" id="deck">    
+    <div class="card-slot">
+      <ul :id="board.props.deck" class="deck">
+        <li v-for="card in deck" :key="card.id">
+          <card :data="card" />
+        </li>
+      </ul>
+    </div>
+  </script>
+  <script id="deck">
+    const Deck = {
+      template: '#deck',
+      data: () => ({
+        cards: []
+      }),
+      computed: {
+        board() { return this.$store.getters.board },
+        deck() { return this.$store.getters.deck },
+        inShuffle() { return this.board && this.$store.getters.object(this.board.deckId).inShuffle }
+      },
+      watch: {
+        inShuffle(value) {
+          if (value) {
+            setTimeout(() => {
+              this.cards = [...this.$el.children[0].children]
+              this.cards.forEach(el => {
+                const card = this.$store.getters.object(el.children[0].id)
+                const rect = el.getBoundingClientRect()
+                this.$store.commit("setObjectPos", { id: card.id, pos: { x: rect.left, y: rect.top }})
+              })
+              this.animateRandomCard()
+            }, 100)
+          }
+        }
+      },
+      mounted() {
+        this.cards = [...this.$el.children[0].children]
+        this.animateRandomCard()
+      },
+      methods: {
+        animateRandomCard() {
+          if (this.inShuffle && this.cards.length) {
+            // select random card
+            const index = Math.floor(Math.random() * this.cards.length)
+            const card = this.cards.splice(index, 1)[0]
+            
+            // animate card
+            TweenMax.to(card, 0.2, { 
+              x: Math.floor(Math.random() * 3 - 1) * 80, 
+              y: Math.floor(Math.random() * 3 - 1) * 120, 
+              repeat: 1, 
+              yoyo: true, 
+              onComplete: () => this.cards.push(card)
+            })
+  
+            // animate next card
+            setTimeout(() => this.animateRandomCard(), 60)
+          }
+        }
+      }
     }
+  </script>
 
+  <script type="text/x-template" id="card">    
+    <component :id="data.id" :is="cardRank && tag || 'div'" class="card" :style="style" :class="cardClass" href="#">
+      <span class="rank" v-if="cardRank">{{ cardRank }}</span>
+      <span class="suit" v-if="cardRank">{{ cardSuit }}</span>
+      {{ !cardRank && "*" || "" }}
+    </component>
+  </script>
+  <script id="card">
+    const Card = {
+      template: '#card',
+      props: ['data', 'tag'],
+      computed: {
+        style() { return this.data.style || "" },
+        face() { return this.data.face || this.data.data || { value: 0  } },
+        cardClass() { return this.face.value && ["rank-" + this.face.value.toLowerCase(), suit(this.face.suit)] || "back" },
+        cardRank() { return this.face.value },
+        cardSuit() { return suitCode(this.face.suit) },
+      },
+      mounted() { !this.data.pos && this.updatePos() },
+      // update card pos when window resized
+      created() { window.addEventListener("resize", this.updatePos) },
+      destroyed() { window.removeEventListener("resize", this.updatePos) },
+      methods: {
+        updatePos() {
+          const rect = this.$el.getBoundingClientRect()
+          this.$store.commit("setObjectPos", { id: this.data.id, pos: { x: rect.left, y: rect.top }})
+        }
+      }
+    }
+    
+  </script>
+
+  <script type="text/x-template" id="player-board">    
+    <div class="player-board" :class="tag">
+      <div id="title" class="text-center title" :class="tag">
+        <v-btn rounded color="green" dark>{{ player.user.name }}</v-btn>
+        <v-icon v-if="!player.connected">mdi-wifi-off</v-icon>
+      </div>
+      <div class="card-slot trash" :class="tag">
+        <ul :id="player.trashId" class="deck" style="height: 0px">
+          <transition-group @enter="animateSlotEnter">
+            <li v-for="card in playerTrash" :key="card.id">
+              <card :data="card" style="opacity: 0" />
+            </li>
+          </transition-group>
+        </ul>
+      </div>
+      <div class="card-slot" :class="tag" :style="transform + '; ' + center">
+        <ul :id="player.handId" :class="pos ? 'hand' : 'hand my'">
+          <transition-group @enter="animateSlotEnter">
+            <li v-for="card in playerHand" :key="card.id" @click="play(player.id, card.id)">
+              <card :data="card" :tag="cardAction(card.id) && 'a'"/>
+            </li>
+          </transition-group>
+        </ul>
+      </div>
+      <div :id="player.cardSlotId" class="card-slot" :class="otag">
+        <transition @enter="animateEnter">
+          <card v-if="card" :data="card" />
+        </transition>
+      </div>
+      <div v-if="timer >= 1" class="timer" :class="timerPos">
+        <v-progress-circular
+          :rotate="-90"
+          :size="50"
+          color="teal"
+          :value="timer/maxTimer*100"
+        >
+          {{ timer }}
+        </v-progress-circular>
+      </div>
+      <div  v-if="player.suit >= 0" class="player-suit">
+        <v-avatar :color="color" size="48">
+          <span class="white--text headline">{{ suitCode }}</span>
+        </v-avatar>
+      </div>
+    </div>
+  </script>
+  <script id="player-board">
+    const PlayerBoard = {
+      template: '#player-board',
+      data: () => ({
+        maxTimer: -1
+      }),
+      props: ['player', 'pos'],
+      computed: {
+        cardAction() { return this.$store.getters.cardAction },
+        playerHand() { return this.$store.getters.playerHand(this.player) },
+        playerTrash() { return this.$store.getters.playerTrash(this.player) },
+        suitCode() { return suitCode(this.player.suit) },
+        card() { 
+          const slot = this.$store.getters.playerCard(this.player)
+          return slot.length && slot[0]
+        },
+        timer() { return this.$store.getters.timer(this.player.timerId) },
+        tag() {
+          return ['bottom', 'left', 'top', 'right'][this.pos]
+        },
+        otag() {
+          return ['top', 'right', 'bottom', 'left'][this.pos]
+        },
+        timerPos() {
+          return ['right h40', '', 'right h25', 'right'][this.pos]
+        },
+        color() {
+          return this.player.suit > 1 ? 'red' : 'black'  
+        },
+        transform() {
+          return ['transform: scale(1.5);', 'transform: rotate(0deg)', '', 'transform: rotate(-0deg)'][this.pos]
+        },
+        center() {
+          const num = this.playerHand.length
+          return ["right: " + num * 35 + "px", "", "", ""][this.pos]
+        }
+      },
+      watch: {
+        timer(value) {
+          this.maxTimer = Math.max(this.maxTimer, value)
+        }
+      },
+      methods: {
+        play(playerId, cardId) { this.$store.dispatch("playerAction", { playerId, cardId }) },
+        animateEnter(el, done) {
+          const card = this.$store.getters.object(el.id)
+          const rect = el.getBoundingClientRect()
+          TweenMax.from(el, 0.5, { x: card.pos.x - rect.left, y: card.pos.y - rect.top, rotation: 180, opacity: 1, onComplete: done })
+          this.$store.commit("setObjectPos", { id: card.id, pos: { x: rect.left, y: rect.top }})
+        },
+        animateSlotEnter(el, done) { this.animateEnter(el.firstChild, done) }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="loader">
+    <v-dialog v-model="loading" persistent width="120">
+      <v-card>
+        <v-card-text class="text-xs-center">
+          <v-progress-circular :size="70" indeterminate class="secondary--text"/>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="loader">
+    const Loader = {
+      template: "#loader",
+      computed: {
+        loading: {
+          get() { return this.$store.state.loading },
+          set(value) { this.$store.commit("setLoading", value) }
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="gameLayout">    
+    <div id="game-table" class="playingCards faceImages">
+      <div class="game-board">
+        <deck v-if="board.scene !== 'initGame'"></deck>
+        <div class="game-trump">
+          <span class="suit"></span>
+        </div>
+      </div>
+      <player-board v-for="(player, index) in playersList" :key="player.id" :player="player" :pos="index"></player-board>
+    </div>
+  </script>
+  <script id="gameLayout">
+    const MIN_WIDTH = 550;
+    const MAX_WIDTH = 1500;
+    const MIN_HEIGHT = 750;
+    const MAX_HEIGHT = 1100;
+
+    const GameLayout = {
+      template: '#gameLayout',
+      computed: {
+        ...Vuex.mapGetters([
+          "playersList", "board", "me"
+        ])
+      },
+      methods: {
+        resize() {
+          // get parent element size
+          const { clientWidth: width, clientHeight: height } = this.$el.parentElement
+          
+          // calculate scale for width & height 
+          let scaleX = width / (width < MIN_WIDTH && MIN_WIDTH || width > MAX_WIDTH && MAX_WIDTH || width)
+          let scaleY = height / (height < MIN_HEIGHT && MIN_HEIGHT || height > MAX_HEIGHT && MAX_HEIGHT || height)
+        
+          // adjust scale for width and height
+          scaleX = Math.min(scaleX, height / MIN_HEIGHT)
+          scaleY = Math.min(scaleY, width / MIN_WIDTH)
+          
+          // select scale
+          const scale = Math.abs(scaleX - 1) > Math.abs(scaleY - 1) ? scaleX : scaleY
+
+          // calculate scaled width & height
+          var elWidth = Math.min(Math.max(width / scale, MIN_WIDTH), MAX_WIDTH)
+          var elHeight = Math.min(Math.max(height / scale, MIN_HEIGHT), MAX_HEIGHT)
+
+          // update #game-table inline style
+          const { style } = this.$el
+          style.width = scale !== 1 && elWidth + "px" || "",
+          style.height = scale !== 1 && elHeight + "px" || "",
+          style.transform = scale !== 1 && "scale(" + scale + ")" || ""
+        },
+      },
+      mounted() {
+        window.addEventListener("resize", this.resize)
+        this.resize()
+      },
+    }
+  </script>
+
+  <script type="text/x-template" id="createGame">    
+    <v-container>
+     <h1>Создать стол</h1>
+     <v-row>
+       
+     </v-row>
+
+    </v-container>
+  </script>
+  <script id="createGame">
+    const CreateGame = {
+      template: '#createGame',
+      data: () => ({
+        dialog: false,
+        password: '',
+        error: false,
+      }),
+      computed: {
+        loading() { return this.$store.getters.loading },
+      },
+      methods: {
+       
+      }
+    }
+  </script>
+
+  <script id="magx">
+
+    const { host, port, protocol } = window.document.location
+    var client = new MagX.Client({ address: host.replace(/:.*/, ''), port, secure: protocol === "https:" })
+
+    const suit = suitId => (["spades", "clubs", "hearts", "diams"][suitId] || "")
+    const suitCode = suitId => (["\u2660", "\u2663", "\u2665", "\u2666"][suitId] || "")
+  </script>
+
+  <script id="store">
+  
     let settings = {
       waitTime: 30,
       turnTime: 30,
@@ -1295,192 +517,238 @@
       state: {
         error: "",
         loading: false,
-        sidebar: true,
+  
         token: "",
-        username: "admin",
-        menu: [
-          { title: "Настройки", href: "/", icon: "mdi-cog-outline" },
-          { title: "Турниры", href: "/tournaments", icon: "mdi-account-group-outline" },
-          { title: "История игр", href: "/history", icon: "mdi-text-box-search-outline" },
-        ],
-        settings: {},
+        // state from patches
+        clients: {},
+        objects: {},
+        boardId: "",
+        // meta for objects data
+        meta: {},
+        // from client
+        clientId: "",
+        // from room
+        roomId: "",
+        send: null,
+        leave: null,
+        rooms: [],
       },
       getters: {
-        textDate: () => (date = 0) => {
-          const dateText = new Date(date).toLocaleDateString()
-          const timeText = new Date(date).toLocaleTimeString()
-          return dateText + " " + timeText
-        },
-        textDuration: () => (duration = 0) => {
-          const intervals = [
-            { text: "месяцев", divider: 1000*60*60*24*30 },
-            { text: "недели", divider: 1000*60*60*24*7 },
-            { text: "дней", divider: 1000*60*60*24 },
-            { text: "часов", divider: 1000*60*60 },
-            { text: "минут", divider: 1000*60 },
-          ]
+        // get object by id
+        object: ({ objects }) => (id) => objects[id] || null,
+        // get meta by id
+        objectMeta: ({ meta }) => (id) => meta[id] || null,
 
-          for (const interval of intervals) {
-            const num = duration / interval.divider
-            if (duration % interval.divider === 0) {
-              return `каждые ${num} ${interval.text}`
-            }
-          }
+        // get property object
+        objectProp: ({ }, { object }) => (obj, id) => obj && object(obj.props[id]) || null,
 
-          return "-"
-        },
-        getSettings: ({ token }) => async () => {
-          // const { body } = await superagent
-          //   .get("/admin/settings")
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          return settings
-        },
-        updateSettings: ({ token }) => async (data) => {
-          // const { body } = await superagent
-          //   .put("/admin/settings")
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          //   .payload(data)
-          // return body
-          settings = { ...settings, ...data }
-          return settings
-        },
-        restoreSettings: ({ token }) => async () => {
-          // const { body } = await superagent
-          //   .put("/admin/settings")
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          //   .payload(data)
-          // return body
-          settings = { 
-            waitTime: 30,
-            turnTime: 30,
-            reconnectionTimeout: 30,
-            reconnectionLimit: 5,
-            reconnectionDelay: 15
-          }
-          return settings
-        },
-        getTournaments: ({ token }) => async (options) => {
-          // const { body } = await superagent
-          //   .get(`/admin/tournaments`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          return { data: tournamentsData, count: tournamentsData.length }
-        },
-        getTournament: ({ token }) => async (id) => {
-          // const { body } = await superagent
-          //   .get(`/admin/tournaments`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          return tournamentsData.find((item) => item.id === Number(id))
-        },
-        createTournament: ({ token }) => async (data) => {
-          // const { body } = await superagent
-          //   .post(`/admin/tournaments`)
-          //   .payload(data)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          tournamentsData.push(data)
-          return { success: true }
-        },
-        deleteTournament: ({ token }) => async (id) => {
-          // const { body } = await superagent
-          //   .delete(`/admin/tournaments/${id}`)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          const index = tournamentsData.findIndex((item) => item.id === id)
-          if (index < 0) {
-            return { success: false }
-          }
-          tournamentsData.splice(index)
-          return { success: true }
-        },
-        createTournament: ({ token }) => async (data) => {
-          // const { body } = await superagent
-          //   .get(`/admin/tournaments`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          tournamentsData.push({ id: lastTournamentId++, ...data })
-          return { success: true }
-        },
-        updateTournament: ({ token }) => async (id, data) => {
-          // const { body } = await superagent
-          //   .get(`/admin/tournaments`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          const index = tournamentsData.findIndex((item) => item.id === id)
-          if (index < 0) {
-            return { success: false }
-          }
-          tournamentsData[index] = { id: lastTournamentId++, ...data }
-          return { success: true }
-        },
-        getHistory: ({ token }) => async (options) => {
-          // const { body } = await superagent
-          //   .get(`/admin/logs`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          return { data: games, count: games.length }
-        },
-        getGameResult: ({ token }) => async (id) => {
-          // const { body } = await superagent
-          //   .get(`/admin/logs`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          const game = games.find((item) => item.id === Number(id))
-          return { result: fakeResult(), players: game.players }
-        },
-        getGameLogs: ({ token }) => async (id) => {
-          // const { body } = await superagent
-          //   .get(`/admin/logs`)
-          //   .query(options)
-          //   .set({ 'Authorization': 'Bearer ' + token })
-          // return body
-          const game = games.find((item) => item.id === Number(id))
-          return { result: fakeLogs(), game }
+        // get list of items id
+        objectItems: ({ }, { object }) => (id) => object(id) && object(id).items || [],
+        // get list of items objects
+        objectItemsObject: ({ }, { objectItems, object }) => (id) => objectItems(id).map(itemId => object(itemId)),
+
+        // get client's player
+        me: ({ clients, clientId }, { object }) => clientId && object(clients[clientId]) || null,
+        // get board
+        board: ({ boardId }, { object }) => object(boardId),
+        // get list of players
+        players: ({ clients, objects }, { object, board }) => {
+          return Object.values(objects).filter((o) => o.type === "JokerPlayer").sort((a,b) => a.index - b.index)
         },
       },
       mutations: {
         setLoading(state, value) { state.loading = value },
         setError(state, value) { state.error = value },
-        setUsername(state, value) { state.username = value },
         setToken(state, value) { state.token = value },
-        setSideBar(state, value) { state.sidebar = value },
-        updateSetting(state, { name, value }) { Vue.set(state.settings, name, value) },
-        setSettings(state, data) { state.settings = data },
+        setRoom(state, room) {
+          state.clientId = room.client.auth.id
+          state.roomId = room.id
+          state.leave = () => room.leave()
+          state.send = (type, data) => room.send(type, data)
+        },
+        setRooms(state, rooms) { state.rooms = rooms },
+        updateRoom(state, { roomId, data }) {
+          const index = state.rooms.findIndex((room) => room.id === roomId)
+          if (data === null) {
+            state.rooms.splice(index, 1)
+          } else {
+            if (index >= 0) {
+              Vue.set(state.rooms, index, data)
+            } else {
+              state.rooms.push(data)
+            }
+          }
+        },
+        setState(state, snapshot) {
+          Object.keys(snapshot).forEach((key) => Vue.set(state, key, snapshot[key]))
+        },
+        add(state, { value, key, path }) {
+          let obj = state
+          path.forEach(id => obj = obj[id])
+          if (Array.isArray(obj) && +key) {
+            obj.splice(+key, 0, value)
+          } else {
+            Vue.set(obj, key, value) // set value
+          }
+        },
+        replace(state, { value, key, path }) {
+          let obj = state
+          path.forEach(id => obj = obj[id])
+          if (Array.isArray(obj) && +key) {
+            Vue.set(obj, +key, value) // update array value
+          } else {
+            Vue.set(obj, key, value) // update object value
+          }
+        },
+        remove(state, { path, key }) {
+          let obj = state
+          path.forEach(id => obj = obj[id])
+          if (Array.isArray(obj) && +key) {
+            obj.splice(+key, 1)
+          } else {
+            Vue.delete(obj, key)
+          }
+        },
       },
       actions: {
-        toggleSideBar({ state, commit }) {
-          commit("setSideBar", !state.sidebar)
+        async verifyToken({ commit, dispatch }, token) {
+          if (!token) { return }
+          commit("setLoading", true)
+          try {
+            console.log("verify token", token)
+            const auth = await client.verify(token)
+            commit("setToken", auth ? token : "")
+            commit("setLoading", false)
+            return dispatch("joinLobby")
+          } catch (error) {
+            commit("setToken", "")
+            commit("setLoading", false)
+          }
         },
-        async loadSettings({ getters, commit }) {
-          const settings = await getters.getSettings()
-          commit("setSettings", settings)
+        async authenticate({ commit, dispatch }, id) {
+          commit("setLoading", true)
+          try {
+            const auth = await client.authenticate({ id })
+            console.log("authenticate", auth)
+            commit("setToken", auth.token)
+            // commit("setProfile", auth.data)
+            sessionStorage.setItem("token", auth.token)
+            commit("setLoading", false)
+            return dispatch("joinLobby")
+          } catch (error) {
+            console.log("Error", error)
+            commit("setToken", "")
+            commit("setLoading", false)
+          }
         },
-        async restoreSettings({ getters, commit }) {
-          const settings = await getters.restoreSettings()
-          commit("setSettings", settings)
+        async joinLobby({ commit, dispatch }) {
+          commit("setLoading", true)
+          try {
+            const rooms = await client.getRooms("jokerLobby")
+            const lobby = rooms.length ? await client.joinRoom(rooms[0].id) : await client.createRoom("jokerLobby")
+          
+            console.log("joind lobby")
+            return dispatch("initLobbyHandlers", lobby)
+          } catch (error) {
+            commit("setLoading", false)
+            console.log("Error", error)
+          }
         },
-        signin({ commit }, { email, password }) {    
-          commit('setLoading', true)
-          setTimeout(()=> {
-            commit("setToken", Math.random().toString(24).slice(3))
-            commit("setUsername", email)
-            commit('setLoading', false )
+        initLobbyHandlers({ commit, dispatch }, lobby) {
+          lobby.onMessage("rooms", async (roomsList) => {
+            commit("setRooms", roomsList)
+          })
+          lobby.onMessage("room_update", async (update) => {
+            commit("updateRoom", update)
+          })
+          lobby.onMessage("error", async (data) => {
+            console.log(data)
+          })
+          commit("setLoading", false)
+        },
+        /** 
+         * server events
+        */
+
+        addBot({ state }) {
+          state.send("addbot")
+        },
+
+        execAction({ state, getters, commit }, actionId) {
+          commit("setMeta", { id: getters.board.id, data: { selectedCardId: null } })
+          state.send("action", { actionId })
+        },
+
+        send({ state }, { type, data }) {
+          state.send(type, data)
+        },
+
+        async leave({ state }) {
+          state.send("surrender")
+        },
+
+        /**
+         * Animation
+        */
+        animate({ state, commit }, { el, x, y, r, done }) {
+          const meta = state.meta[el.id]
+          if (!meta) { return }
+          r = r || 180
+          if (Math.abs(meta.x - x) + Math.abs(meta.y - y) > 100) {
+            r = 0
+            TweenMax.from(el, 0.5, { x: meta.x - x, y: meta.y - y, rotation: r, opacity: 1, onComplete: done })
+          }
+          commit("setMeta", { id: el.id, data: { x, y } })
+        },
+
+        /**
+         * Magx API
+        */
+
+        async createRoom({ dispatch }, { options }) {
+          room = await client.createRoom('joker', options)
+          await dispatch("initRoomHandlers", room)
+        },
+
+        async joinRoom({ dispatch }, { roomId, password }) {
+          room = await client.joinRoom(roomId, { password })
+          dispatch("initRoomHandlers", room)
+        },
+
+        async reconnect({ dispatch }, { roomId, sessionId }) {
+          const timer = setTimeout(() => {
+            Promise.reject()
           }, 1000)
+          room = await client.reconnect(roomId)
+          clearTimeout(timer)
+          dispatch("initRoomHandlers", room)
         },
-        logout({ commit }) {
-          commit('setLoading', true)
-          setTimeout(()=> {
-            commit('setToken', "")
-            commit('setLoading', false)
-          }, 1000)
+        // init room handlers
+        initRoomHandlers({ commit, dispatch }, room) {
+          commit("setRoom", room)
+
+          // save roomId
+          sessionStorage.setItem('roomId', room.id)
+
+          // handle messages from server
+          room.onMessage("log", (data) => {
+            console.log(data)
+          })
+
+          room.onPatch(({ op, value, path }) => {
+            // console.log("onPatch", { op, value, path })
+            path = path.substr(1).split("/")
+            commit(op, { value, key: path.pop(), path })
+          })
+
+          room.onSnapshot((snapshot) => {
+            // console.log("onSnapshot", snapshot)
+            commit("setState", snapshot)
+          })
+
+          room.onLeave(() => {
+            // TODO
+          })
         }
       }
     })
@@ -1489,26 +757,24 @@
   <script id="router">
     const router = new VueRouter({
       mode: "history",
-      base: "/admin/",
       routes: [
-        { path: '/', component: Settings },
-        { path: '/tournaments', component: Tournaments },
-        { path: '/tournaments/create', component: TournamentForm },
-        { path: '/tournaments/:id', component: TournamentForm, props: true },
-        { path: '/history', component: History },
-        { path: '/history/:id/logs', component: Logs, props: true },
-        { path: '/history/:id/result', component: GameResult, props: true },
+        { path: '/', component: Main },
+        { path: '/game/create', component: CreateGame },
+        { path: '/game/:id', component: GameLayout, props: true },
       ]
     })
   </script>
 
   <script id="vue">
     Vue.component('appbar', AppBar)
-    Vue.component('sidebar', SideBar)
     Vue.component('loader', Loader)
     Vue.component('layout', Layout)
     Vue.component('login', Login)
     Vue.component('error', ErrorMessage)
+
+    Vue.component('deck', Deck)
+    Vue.component('card', Card)
+    Vue.component('player-board', PlayerBoard)
 
     new Vue({
       el: '#app',

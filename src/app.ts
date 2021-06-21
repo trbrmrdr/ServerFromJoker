@@ -4,11 +4,13 @@ import { FastifyPluginAsync } from 'fastify'
 import serve from "fastify-static"
 import fp from 'fastify-plugin'
 import { join } from 'path'
+import { LobbyRoom, Server } from "magx"
 
 import plugins from './plugins'
 
 import { startAgenda } from './lib/agenda'
 import { db } from './lib/mongo'
+import { JokerRoom } from './rooms/joker'
 
 // import validation from "./lib/validation"
 
@@ -33,11 +35,16 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify): Promise<void> => {
     // start check new mtches job
     fastify.log.info("Agenda started")
     // schedule agenda jobs
-
   })
 
-  // init ws server
-  // initSocketServer(fastify)
+  fastify.magx =  new Server(fastify.server, {
+    // auth: {
+    //   verify: (token) => true,
+    //   sign: (id) => id
+    // }
+  })
+    .define("joker", JokerRoom)
+    .define("jokerLobby", LobbyRoom, { watch: ["joker"] })
   
   // register web 
   fastify.register(serve, {
@@ -51,3 +58,9 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify): Promise<void> => {
 
 export default app
 export { app }
+
+declare module 'fastify' {
+  export interface FastifyInstance {
+    magx: Server
+  }
+}
