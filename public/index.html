@@ -469,32 +469,61 @@
 
   <script type="text/x-template" id="createGame">    
     <v-container>
-     <h1>Создать стол</h1>
-     <v-row>
-       
-     </v-row>
+      <h1>Создать комнату</h1>
+      <v-row class="mb-6" justify="center" no-gutters>
 
+          <v-col lg="12">
+
+            <v-text-field v-model="name" label="Название комнаты"></v-text-field>
+            <v-slider v-model="bet" :label="betText" step="100" min="100" max="1000"></v-slider>
+            <v-text-field v-model="password" label="Password"></v-text-field>
+          
+            <v-switch v-model="autoPlay" label="Автоход по таймауту"></v-switch>
+            <v-slider v-model="timer" :label="timerText" step="1" min="1" max="30"></v-slider>
+
+            <v-btn class="ma-2" :loading="loading" :disabled="loading || error" @click="create()">
+              Создать
+            </v-btn>
+
+            <v-btn class="ma-2" to="/">
+              Отмена
+            </v-btn>
+
+          </v-col>
+
+      </v-row>
     </v-container>
   </script>
   <script id="createGame">
     const CreateGame = {
       template: '#createGame',
       data: () => ({
-        dialog: false,
+        name: "",
+        bet: 0,
         password: '',
-        error: false,
+        loading: false,
+        autoPlay: false,
+        timer: 15,
       }),
       computed: {
-        loading() { return this.$store.getters.loading },
+        error() { return !this.name },
+        betText() { return "Ставка: " + this.bet },
+        timerText() { return "Время на ход: " + this.timer },
       },
       methods: {
-       
+        async create() {
+          const { name, bet, password, autoplay, timer } = this.$data
+          await this.$store.dispatch("createRoom", { bet, password, autoplay, timer })
+          const room = this.$store.state.room
+          if (room) {
+            this.$router.push({ path: `/game/${room.id}`})
+          }
+        }
       }
     }
   </script>
 
   <script id="magx">
-
     const { host, port, protocol } = window.document.location
     var client = new MagX.Client({ address: host.replace(/:.*/, ''), port, secure: protocol === "https:" })
 
@@ -705,7 +734,7 @@
          * Magx API
         */
 
-        async createRoom({ dispatch }, { options }) {
+        async createRoom({ dispatch }, options) {
           room = await client.createRoom('joker', options)
           await dispatch("initRoomHandlers", room)
         },
