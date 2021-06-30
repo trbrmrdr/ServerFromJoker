@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta charset="UTF-8">
   <!-- <link href="/public/css/fonts.css" rel="stylesheet"> -->
   <!-- <link href="/public/css/icons.css" rel="stylesheet"> -->
@@ -660,10 +661,11 @@
 
           // update #game-table inline style
           const { style } = this.$el.firstChild
+          // this.$store.commit("setScale", { scale })
           if (!style) { return }
-          style.width = scale !== 1 && elWidth + "px" || "",
-          style.height = scale !== 1 && elHeight + "px" || "",
-          style.transform = scale !== 1 && "scale(" + scale + ")" || ""
+          // style.width = scale !== 1 && elWidth + "px" || "",
+          // style.height = scale !== 1 && elHeight + "px" || "",
+          // style.transform = scale !== 1 && "scale(" + scale + ")" || ""
         },
       },
       async mounted() {
