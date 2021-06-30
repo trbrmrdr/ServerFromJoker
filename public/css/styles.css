@@ -179,13 +179,13 @@ body {
   top: -200px;
 }
 
-.left{
-  left: 15px;
+.left {
+  left: 5px;
   right: initial;
 }
 
 .right{
-  right: 15px;
+  right: 5px;
   left: initial;
 }
 
@@ -197,6 +197,14 @@ body {
 .top{
   top: 0;
   bottom: initial;
+}
+
+.t180{
+  top: 180px;
+}
+
+.t260{
+  top: 260px;
 }
 
 .playingCards ul.hand.my li:nth-child(1)  { left: 0; }

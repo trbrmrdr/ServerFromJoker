@@ -344,8 +344,9 @@
       }),
       props: ['pos'],
       computed: {
-        ...Vuex.mapGetters(["me", "objectProp", "objectItemsObject", "players"]),
-        player() { return this.players && this.players.find((p) => p.index === Number(this.pos)) },
+        ...Vuex.mapGetters(["me", "objectProp", "objectItemsObject", "players", "playersList"]),
+        playerIndex() { return this.playersList[Number(this.pos)] },
+        player() { return this.players && this.players.find((p) => p.index === this.playerIndex) },
         playerHand() {
           if (this.player === this.me) {
             const cardRank = ["A", "K", "Q", "J", "10", "9", "8", "7", "6"]
@@ -371,7 +372,7 @@
           return ['top', 'right', 'bottom', 'left'][this.pos]
         },
         timerPos() {
-          return ['right h40', '', 'right h25', 'right'][this.pos]
+          return ['right t180', 't260', 'right t180', 'right t260'][this.pos]
         },
         color() {
           return this.player.suit > 1 ? 'red' : 'black'  
@@ -394,7 +395,7 @@
       },
       methods: {
         placeAction() {
-          this.$store.state.send("place", Number(this.pos))
+          this.$store.state.send("place", this.playersList[Number(this.pos)])
         },
         addbot() {
           this.$store.state.send("addbot", Number(this.pos))
@@ -617,7 +618,7 @@
     </div>
   </script>
   <script id="game-layout">
-    const MIN_WIDTH = 550;
+    const MIN_WIDTH = 650;
     const MAX_WIDTH = 1500;
     const MIN_HEIGHT = 750;
     const MAX_HEIGHT = 1100;
@@ -642,7 +643,7 @@
         addBot() { this.$store.dispatch("addBot") },
         resize() {
           // get parent element size
-          const { clientWidth: width, clientHeight: height } = this.$el.firstChild
+          const { clientWidth: width, clientHeight: height } = this.$el
           
           // calculate scale for width & height 
           let scaleX = width / (width < MIN_WIDTH && MIN_WIDTH || width > MAX_WIDTH && MAX_WIDTH || width)
@@ -660,12 +661,13 @@
           var elHeight = Math.min(Math.max(height / scale, MIN_HEIGHT), MAX_HEIGHT)
 
           // update #game-table inline style
-          const { style } = this.$el.firstChild
+          const { style } = this.$el.lastChild
           // this.$store.commit("setScale", { scale })
           if (!style) { return }
-          // style.width = scale !== 1 && elWidth + "px" || "",
-          // style.height = scale !== 1 && elHeight + "px" || "",
-          // style.transform = scale !== 1 && "scale(" + scale + ")" || ""
+          style.width = scale !== 1 && elWidth + "px" || "",
+          style.height = scale !== 1 && elHeight + "px" || "",
+          style.transform = scale !== 1 && "scale(" + scale + ")" || ""
+          style.transformOrigin = "top left"
         },
       },
       async mounted() {
@@ -804,6 +806,14 @@
         // get list of players
         players: ({ clients, objects }, { object, board }) => {
           return Object.values(objects).filter((o) => o.type === "JokerPlayer").sort((a,b) => a.index - b.index)
+        },
+        playersList: ({}, { me }) => {
+          const result = [0,1,2,3]
+          const index = result.indexOf(me.index)
+          if (index > 0) {
+            result.push(...result.splice(0, index))
+          }
+          return result
         },
       },
       mutations: {

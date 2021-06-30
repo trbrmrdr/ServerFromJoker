@@ -85,6 +85,7 @@ export const roundFlow = async (ctx: JokerContext) => {
           player.addAction("setJoker", { suit, higher: true })
           player.addAction("setJoker", { suit, higher: false })
         }
+        const actions = Array.from(player.actions.values())
         const jokerAction = actions[rand(actions.length - 1)]
         player.dialog = "selectJoker"
         await ctx.waitPlayerAction([{
