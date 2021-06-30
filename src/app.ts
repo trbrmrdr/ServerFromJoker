@@ -5,6 +5,7 @@ import serve from "fastify-static"
 import fp from 'fastify-plugin'
 import { join } from 'path'
 import { LobbyRoom, Server } from "magx"
+import cors from 'fastify-cors'
 
 import plugins from './plugins'
 
@@ -30,6 +31,10 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify): Promise<void> => {
   // register plugins
   await fastify.register(fp(plugins))  
   // await fastify.register(AutoLoad, { dir: join(__dirname, 'plugins') })  
+
+  await fastify.register(cors, { 
+    // put your options here
+  })
 
   startAgenda(db).then((agenda) => {
     // start check new mtches job
