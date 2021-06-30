@@ -1,13 +1,16 @@
 import { LocalClient } from "magx"
 
-import { rand, JokerBoard, JokerPlayer, JokerContext } from "./types"
+import { rand, JokerBoard, JokerPlayer, JokerContext, JokerState } from "./types"
 import { GameState, PlayerAction } from "./engine/types"
 
 export const createBot = (ctx: JokerContext, client: LocalClient, params?: any) => {
   let acting = false
-  const state = client.room.state as GameState
-  const playerId = state.clients.get(client.id) as string
-  const player = state.objects.get(playerId) as JokerPlayer
+  const state = client.room.state as JokerState
+  const jokerClient = state.clients.get(client.id)
+
+  if (!jokerClient || !jokerClient.player) { return }
+
+  const player = jokerClient.player
   const board = state.objects.get(state.boardId) as JokerBoard
   const timerId = player.timer.id
 
@@ -32,10 +35,6 @@ export const createBot = (ctx: JokerContext, client: LocalClient, params?: any) 
       acting = true
 
       const actions = Array.from(player.actions.values())
-      const index = actions.findIndex((action) => action.name === "place")
-      if (index >= 0) {
-        actions.splice(index, 1)
-      }
 
       if (actions.length) {
         const action = selectBestAction(client.room.state, player)

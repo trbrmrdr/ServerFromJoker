@@ -32,16 +32,20 @@ export class PlayerAction extends Mosx {
   }
 }
 
-export class Player extends GameItem {
-  @mx.boolean public connected: boolean = true
+export interface IPlayerParams {
+  clientId: string
+}
+
+export class Player<T extends IPlayerParams = any> extends GameItem {
   @mx.private public actions = new Map<string, PlayerAction>()
+  @mx.boolean public connected: boolean = true
 
   public clientId: string
   public timer: Timer
 
-  constructor(state: GameState, owner?: GameItem, params?: any, created = true) {
-    super (state, owner, params, false)
-    this.clientId = params.auth.id
+  constructor(state: GameState, params: T, created = true) {
+    super (state, undefined, params, false)
+    this.clientId = params.clientId
     this.timer = this.addProp(Timer, "timer")
     created && this.create(params)
   }
@@ -63,7 +67,7 @@ export class Player extends GameItem {
     return
   }
 
-  public addAction(name: string, data?: any, params?: any) {
+  public addAction(name: string, data?: any, params?: any): PlayerAction {
     const action = new PlayerAction(this, name, data, params)
     this.actions.set(action.id, action)
     return action

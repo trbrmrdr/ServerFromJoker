@@ -12,10 +12,6 @@ export const gameFlow = async (ctx: JokerContext) => {
   while (ctx.data.phase !== "endGame" && ctx.state.board.round < 24) {
     debuglog(ctx, ctx.roles.active.player, `>> game round`)
 
-
-    // init game phase
-    await ctx.next("initRound")
-
     await ctx.next("roundFlow")
 
     if (ctx.data.phase === "endGame") { continue }

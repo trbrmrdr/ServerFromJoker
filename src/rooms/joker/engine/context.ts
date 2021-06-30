@@ -1,53 +1,53 @@
 import { EventEmitter } from "events"
 
 import { GamePlayers, isPromise, PlayerQueueIndex } from "./players"
-import { GameState, Player, GameItem, IAction } from "./types"
+import { GameState, Player, IAction } from "./types"
 
-export type ActionHandler<P extends Player, B extends GameItem> =
-  (ctx: GameContext<P, B>, player: P, action: IAction) => void
+export type ActionHandler<P extends Player, S extends GameState> =
+  (ctx: GameContext<P, S>, player: P, action: IAction) => void
 
-export type EventHandler<P extends Player, B extends GameItem> =
-  (ctx: GameContext<P, B>, ...args: any[]) => void
+export type EventHandler<P extends Player, S extends GameState> =
+  (ctx: GameContext<P, S>, ...args: any[]) => void
 
-export type PhaseHandler<P extends Player, B extends GameItem> =
-  (ctx: GameContext<P, B>, ...args: any[]) => Promise<void> | void
+export type PhaseHandler<P extends Player, S extends GameState> =
+  (ctx: GameContext<P, S>, ...args: any[]) => Promise<void> | void
 
 export type Type<T> = new (...args: any[]) => T
 
-export interface IContextEngine<P extends Player, B extends GameItem> {
+export interface IContextEngine<P extends Player, S extends GameState> {
   // data?: () => any
   // computed?: { [key: string]: any }
-  phases: { [phase: string]: PhaseHandler<P, B> }
-  actions?: { [action: string]: ActionHandler<P, B> }
+  phases: { [phase: string]: PhaseHandler<P, S> }
+  actions?: { [action: string]: ActionHandler<P, S> }
   roles?: string[]
 }
 
-export interface IPlayerActionOption<P extends Player, B extends GameItem> {
+export interface IPlayerActionOption<P extends Player, S extends GameState> {
   player: P
   cleanPlayerOnAction?: boolean
   cleanAllOnAction?: boolean
   timeout?: number
   timeoutActionId?: string
-  timeoutHandler?: (ctx: GameContext<P, B>, player: P) => void
+  timeoutHandler?: (ctx: GameContext<P, S>, player: P) => void
   stopTimer?: boolean
 }
 
-export interface IActionsData<P extends Player, B extends GameItem> {
-  playersOptions?: IPlayerActionOption<P, B>[]
+export interface IActionsData<P extends Player, S extends GameState> {
+  playersOptions?: IPlayerActionOption<P, S>[]
   resolve: (value: IAction | null) => void
 }
 
-export class GameContext<P extends Player, B extends GameItem, D = any> extends EventEmitter {
-  public actionsData: IActionsData<P, B> | null = null
+export class GameContext<P extends Player, S extends GameState, D = any> extends EventEmitter {
+  public actionsData: IActionsData<P, S> | null = null
   public players: GamePlayers<P>
-  public state: GameState<B>
+  public state: S
   public roles: { [role: string]: PlayerQueueIndex<P> } = {}
 
   public options: { [key: string]: any }
   public gameId: string
   public data: D
 
-  constructor(public engine: IContextEngine<P, B>, state: GameState<B>, gameId: string) {
+  constructor(public engine: IContextEngine<P, S>, state: S, gameId: string) {
     super()
     this.gameId = gameId
     this.state = state
@@ -109,7 +109,7 @@ export class GameContext<P extends Player, B extends GameItem, D = any> extends 
 
     if (this.actionsData) {
       const { playersOptions = [], resolve } = this.actionsData
-      const options = playersOptions.find(({ player: p }) => player === p) || {} as IPlayerActionOption<P, B>
+      const options = playersOptions.find(({ player: p }) => player === p) || {} as IPlayerActionOption<P, S>
 
       if (options.timeout && options.stopTimer) {
         player.timer.stop()
@@ -126,7 +126,7 @@ export class GameContext<P extends Player, B extends GameItem, D = any> extends 
     }
   }
 
-  public waitPlayerAction(playersOptions: IPlayerActionOption<P, B>[] = []): Promise<IAction | null> {
+  public waitPlayerAction(playersOptions: IPlayerActionOption<P, S>[] = []): Promise<IAction | null> {
     return new Promise((resolve) => {
       this.actionsData = { playersOptions, resolve }
 

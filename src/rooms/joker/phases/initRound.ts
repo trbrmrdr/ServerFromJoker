@@ -1,15 +1,20 @@
-import { debuglog, rand } from "../common"
+import { debuglog, isJocker } from "../common"
 import { Container } from "../engine/types"
 import { JokerContext } from "../types"
+
+const dealDelay = 0.2
 
 export const initRound = async (ctx: JokerContext) => {
   // clear players status and timer
   ctx.players.forEach((player) => {
     player.tricks = 0
     player.bid = -1
+    player.jokerTrump = true
   })
 
-  const { deck } = ctx.state.board
+  const { deck, round, trump, trumpSlot } = ctx.state.board
+
+  trump.suit = -1
 
   // move all cards to deck
   ctx.state.objects.forEach((obj) => {
@@ -21,29 +26,44 @@ export const initRound = async (ctx: JokerContext) => {
 
   // shuffle cards
   debuglog(ctx, ctx.roles.active.player, `>> shuffle cards`)
-  ctx.state.board.deck.shuffle()
-  
-  // select dealer
-  ctx.roles.active.index = rand(3)
+  deck.shuffle()
 
+  const roundCards = (round - 1) % 12 > 7 ? 9 : (round > 8) ? Math.abs(round - 21) : round
 
-  while (deck.cards.length && ctx.data.phase !== "endGame") {
-    const { player: active } = ctx.roles.active
-    if (!active) { return }
-    deck.moveTop(active.cardSlot)
-    
-    if (active.cardSlot.top.face.value === "A") {
-      // set dealer
-      ctx.roles.dealer.player = active
-      ctx.roles.active.moveNext()
+  const { player: dealer } = ctx.roles.dealer
+  ctx.roles.active.player = ctx.roles.dealer.next
+  while (dealer.hand.cards.length < roundCards && deck.cards.length && ctx.data.phase !== "endGame") {
+    if (ctx.data.phase === "endGame") { return }
+    const { player: active, prev } = ctx.roles.active
+    if (dealer.hand.cards.length === 3 && roundCards === 9 && prev === dealer) {
+      const defAction = active.addAction("setTrump", 4)
+      for (let i = 0; i < 4; i++) {
+        active.addAction("setTrump", i)
+      }
       
-      debuglog(ctx, active, `>> player: ${active.user.name} is dealer`)
-      break
+      active.dialog = "selectTrump"
+      debuglog(ctx, ctx.roles.active.player, `>> wait for player action`)
+      await ctx.waitPlayerAction([{
+        player: active,
+        timeout: ctx.options.timer,
+        timeoutActionId: defAction.id
+      }])
     }
-    await ctx.delay(ctx.options.dealDelay)
+    if (!active) { return }
+    deck.moveTop(active.hand)
+    debuglog(ctx, dealer, `>> move card from deck to player: ${active.clientId}`)
+    ctx.roles.active.moveNext()
+    await ctx.delay(dealDelay)
+  }
+
+  if (roundCards !== 9) {
+    deck.moveTop(trumpSlot)
+    if (isJocker(trumpSlot.cards[0])) {
+      trump.suit = 4
+    } else {
+      trump.suit = trumpSlot.cards[0].face.suit
+    }
   }
 
   if (ctx.data.phase === "endGame") { return }
-
-  await ctx.delay(ctx.options.initGameDelay)
 }

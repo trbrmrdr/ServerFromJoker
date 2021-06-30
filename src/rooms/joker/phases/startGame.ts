@@ -1,4 +1,4 @@
-import { JokerContext, JokerPlayer } from "../types"
+import { JokerContext } from "../types"
 import { removeActions } from "../common"
 
 export const startGame = async (ctx: JokerContext) => {
@@ -7,8 +7,8 @@ export const startGame = async (ctx: JokerContext) => {
 
   ctx.data.phase = "init"
 
-  for (const playerId of ctx.state.clients.values()) {
-    const player = ctx.state.objects.get(playerId) as JokerPlayer
+  for (const { player } of ctx.state.clients.values()) {
+    if (!player) { continue }
 
     // check if player has enough credits
     if (player.clientId.length > 10) { // skip bots

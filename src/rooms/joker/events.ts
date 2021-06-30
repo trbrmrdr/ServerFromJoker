@@ -1,73 +1,41 @@
-import { getUserDocument } from "../../lib/common"
-import { JokerContext, JokerPlayer, IJokerOptions, IUser } from "./types"
-import { addPlaceAction, debuglog, removeAction } from "./common"
-import { IAction } from "./engine/types"
+import { JokerContext, JokerPlayer, IJokerOptions, JokerClient } from "./types"
+import { addPlaceAction, debuglog } from "./common"
 
-export const onAuth = async (ctx: JokerContext, user: IUser, options: IJokerOptions) => {
+export const onJoinRoom = async (ctx: JokerContext, client: JokerClient, options: IJokerOptions) => {
 
   // check password
-  if (ctx.options.password && (!options || ctx.options.password !== options.password)
-    && !ctx.state.board.invites.includes(user.id)) {
+  if (ctx.options.password && (!options || ctx.options.password !== options.password)) {
     throw new Error("Wrong password")
   }
 
-  // check credits
-  if (ctx.options.bet > user.balance) {
-    throw new Error("Not enough credits")
-  }
+
 }
 
 /**
- * On player joined the room
+ * On player take place in room
  * @param ctx - game context
- * @param player - joined player
+ * @param client - 
  * @param options - joined options
  */
-export const onJoin = async (ctx: JokerContext, player: JokerPlayer, options: IJokerOptions) => {
+export const onTakePlace = async (ctx: JokerContext, client: JokerClient, data: any) => {
 
+  // check credits
+  // if (ctx.options.bet > client.balance) {
+  //   throw new Error("Not enough credits")
+  // }
   // check if real players
-  if (player.userRef) {
+  // if (player.userRef) {
     // TODO block money
-  }
+  // }
 
   // find free place
-  const players: any[] = new Array(ctx.options.players)
-  ctx.state.clients.forEach((id) => {
-    const p = ctx.state.objects.get(id) as JokerPlayer
-    players[p.index] = p
-  })
+  // const players: any[] = new Array(ctx.options.players)
+  // ctx.state.clients.forEach(({ player }) => {
+  //   if (!player) { return }
+  //   players[player.index] = player
+  // })
 
-  // add open action if room with password
-  if (ctx.options.password) {
-    player.addAction("button", "open")
-  }
 
-  // update place actions
-  players.forEach((p) => {
-    if (!p) { return }
-
-    if (p === player) {
-      // add actions
-      for (let i = 0; i < ctx.options.players; i++) {
-        !players[i] && addPlaceAction(ctx, p, i)
-      }
-    } else {
-      // remove action with index
-      const actions: IAction[] = Array.from(p.actions.values())
-      const action = actions.find(({ data }) => data === player.index)
-      if (action) {
-        removeAction(ctx, p, action.id)
-      }
-    }
-  })
-
-  // if all players in room start game phase
-  if (ctx.state.clients.size === ctx.options.players) {
-    ctx.emit("lock")
-
-    if (ctx.state.board.scene !== "init") { return }
-    return ctx.next("startGame")
-  }
 }
 
 /**
@@ -79,36 +47,10 @@ export const onReadyAction = async (ctx: JokerContext, player: JokerPlayer) => {
   player.removeActions()
   debuglog(ctx, player, `stop timer`)
 
-  // add player to players list
-  ctx.players[player.index] = player
-
   // start game flow if all players are ready
   if (ctx.players.filter((p) => !!p).length === ctx.options.players) {
     await ctx.next("gameFlow")
   }
-}
-
-/**
- * On invite friend
- * @param ctx - game context
- * @param player - player who invited friend
- * @param userId - user id of invited player
- */
-export const onInvite = async (ctx: JokerContext, player: JokerPlayer, userId: string) => {
-  // find user
-  const user = await getUserDocument(userId)
-  if (!user) { return }
-
-  const { board } = ctx.state
-
-  // add user to invited list in room's data
-  const list = new Set(...(ctx.options.invites || "").split(";"))
-  list.add(userId)
-  if (!board.invites.includes(userId)) {
-    board.invites.push(userId)
-  }
-  const invites = [...list.values()].join(";")
-  ctx.emit("update_data", { ...board.options, invites, password: !!ctx.options.password })
 }
 
 /**
@@ -139,7 +81,7 @@ export const onReconnect = async (ctx: JokerContext, player: JokerPlayer) => {
 
   // check if player out of reconnection limit
   if (++player.reconnectCount >  ctx.options.reconnectionlimit) {
-    return ctx.next("setJoker", player)
+    return ctx.next("gameOver", player) 
   }
 
   // reset all player's timers
@@ -162,7 +104,7 @@ export const onSurrender = async (ctx: JokerContext, player: JokerPlayer) => {
   const index = ctx.players.indexOf(player)
   if (ctx.state.board.scene === "game" && index >= 0 && ctx.players.notInGroup("win").includes(player)) {
     // end game
-    return ctx.next("setJoker", player)
+    return ctx.next("gameOver", player)
   } else {
     // drop player from room
     ctx.emit("player_dropped", player)
@@ -186,18 +128,18 @@ export const onLeave = async (ctx: JokerContext, player: JokerPlayer) => {
   const index = ctx.players.indexOf(player)
   if (ctx.state.board.scene === "game" && index >= 0 && ctx.players.notInGroup("win").includes(player)) {
     // end game
-    await ctx.next("setJoker", player)
+    await ctx.next("gameOver", player)
   }
 
   // reset all players if count down started
   if (ctx.state.board.scene === "init") {
-    for (const playerId of ctx.state.clients.values()) {
-      const p = ctx.state.objects.get(playerId) as JokerPlayer
-      p.timer.stop()
-      p.removeActions()
+    for (const { player } of ctx.state.clients.values()) {
+      if (!player) { continue }
+      player.timer.stop()
+      player.removeActions()
 
       // add place action
-      addPlaceAction(ctx, p, player.index)
+      addPlaceAction(ctx, player, player.index)
     }
     // unlock room
     ctx.emit("unlock")

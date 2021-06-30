@@ -1,0 +1,225 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#game-container{
+  position: relative;
+  left:0px;
+  top:0px;
+  height: 100%;
+  width: 100%;
+  background-color: lightgray;
+}
+
+#game-table {
+  position: absolute;
+  transform-origin: top left;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.game-board  {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card-slot {
+  position: absolute;
+  width: 80px;
+  height: 120px;
+  margin: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.score {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200px;
+  height: 200px;
+  padding: 10px;
+}
+
+.team-score {
+  position: relative;
+  display: inline-block;
+  width: 45%;
+  height: 100%;
+  opacity: 0.4;
+}
+
+.card {
+  z-index: 10;
+}
+
+.game-trump {
+  position: absolute;
+  top: 0;
+  width: 20%;
+  height: 10%;
+  max-width: 100px;
+  max-height: 100px;
+  margin: 30px 150px;
+}
+
+.game-deck {
+  position: absolute;
+  top: 0;
+  width: 20%;
+  height: 10%;
+  max-width: 100px;
+  max-height: 100px;
+  margin: 30px;
+}
+
+.player-board {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+}
+
+.player-board.left, .player-board.right{
+  width: 50%;
+  height: 50%;
+
+  max-height: 400px;
+}
+
+.player-board.bottom {
+  width: 100%;
+  height: 50%;
+
+  max-width: 800px;
+}
+
+.player-board.top {
+  width: 70%;
+  height: 50%;
+
+  max-width: 500px;
+}
+
+.h25 {
+  top: 25%;
+}
+
+.h40 {
+  bottom: 100px;
+}
+
+.timer {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+}
+
+.bid {
+  position: absolute;
+  margin: 0 100px;
+  width: 100px;
+  height: 100px;
+}
+
+.joker {
+  position: absolute;
+  margin-top: 40px;
+  width: 300px;
+  height: 100px;
+}
+
+.player-suit {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.title {
+  position: absolute;
+  display: inline-block;
+  padding: 20px 50px;
+  margin: auto; 
+  width: 200px;
+  height: 40px;
+  z-index: 30;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.top .title {
+  bottom: auto;
+  top: 110px; 
+}
+
+.left .title {
+  left: -50px;
+  top: -200px;
+}
+
+.right .title {
+  right: 100px;
+  top: -200px;
+}
+
+.left{
+  left: 15px;
+  right: initial;
+}
+
+.right{
+  right: 15px;
+  left: initial;
+}
+
+.bottom{
+  bottom: 15px;
+  top: initial;
+}
+
+.top{
+  top: 0;
+  bottom: initial;
+}
+
+.playingCards ul.hand.my li:nth-child(1)  { left: 0; }
+.playingCards ul.hand.my li:nth-child(2)  { left: 2.1em; }
+.playingCards ul.hand.my li:nth-child(3)  { left: 4.2em; }
+.playingCards ul.hand.my li:nth-child(4)  { left: 6.3em; }
+.playingCards ul.hand.my li:nth-child(5)  { left: 8.4em; }
+.playingCards ul.hand.my li:nth-child(6)  { left: 10.5em; }
+.playingCards ul.hand.my li:nth-child(7)  { left: 12.6em; }
+.playingCards ul.hand.my li:nth-child(8)  { left: 14.7em; }
+
+@media screen and (min-width: 320px) and (max-width: 767px) and (orientation: landscape) {
+  html {
+    transform: rotate(-90deg);
+    transform-origin: left top;
+    width: 100vh;
+    overflow-x: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+}
+
+.playingCards .card.score-red .score:after {
+  content: "\2665 \A\A\2665";
+}

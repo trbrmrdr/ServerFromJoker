@@ -1,9 +1,18 @@
 import { debuglog, rand } from "../common"
 import { JokerContext } from "../types"
 
+const dealDelay = 0.2
+const initGameDelay = 3
+
 export const initGame = async (ctx: JokerContext) => {
-  // clear players status and timer
-  ctx.players.forEach((player) => {
+
+  ctx.players.clear()
+
+  ctx.state.clients.forEach(({ player }) => {
+    if (!player) { return }
+    // add player to players list
+    ctx.players[player.index] = player
+    // clear players status and timer
     player.tricks = 0
     player.bid = -1
   })
@@ -32,13 +41,14 @@ export const initGame = async (ctx: JokerContext) => {
       ctx.roles.dealer.player = active
       ctx.roles.active.moveNext()
       
-      debuglog(ctx, active, `>> player: ${active.user.name} is dealer`)
+      debuglog(ctx, active, `>> player: ${active.clientId} is dealer`)
       break
     }
-    await ctx.delay(ctx.options.dealDelay)
+    ctx.roles.active.moveNext()
+    await ctx.delay(dealDelay)
   }
 
   ctx.state.board.round = 1
 
-  await ctx.delay(ctx.options.initGameDelay)
+  await ctx.delay(initGameDelay)
 }

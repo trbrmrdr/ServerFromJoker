@@ -7,10 +7,15 @@ export const cardSuit = (card: Card) => ["\u2660", "\u2663", "\u2665", "\u2666"]
 
 export const debuglog = (ctx: JokerContext, player: JokerPlayer, message: string) => {
   if (!player) { return }
-  const role = player === ctx.roles.def.player ? "def" : "active"
-  const msg = `${ctx.gameId}: ${player.user.name} [${role}]: ${message}`
+  const msg = `${ctx.gameId}: ${player.clientId}: ${message}`
   ctx.emit("log", msg)
   console.log(msg)
+}
+
+export const Suit = { spades: 0, clubs: 1, hearts: 2, diams: 3 }
+
+export const isJocker = ({ face }: Card) => {
+  return face.value === "6" && (face.suit === Suit.spades || face.suit === Suit.clubs)
 }
 
 export const cardText = (card: Card) => {

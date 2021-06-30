@@ -1,4 +1,4 @@
-import { JokerContext, JokerPlayer } from "../types"
+import { JokerContext } from "../types"
 
 export const endGame = async (ctx: JokerContext) => {
   const { board } = ctx.state
@@ -22,9 +22,9 @@ export const endGame = async (ctx: JokerContext) => {
 
   if (ctx.state.clients.size < ctx.options.players) {
 
-    for (const playerId of ctx.state.clients.values()) {
-      const p = ctx.state.objects.get(playerId) as JokerPlayer
-      p.timer.stop()
+    for (const { player } of ctx.state.clients.values()) {
+      if (!player) { continue }
+      player.timer.stop()
     }
     // unlock room
     ctx.emit("unlock")

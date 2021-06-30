@@ -1,13 +1,13 @@
 import { Mosx, mx } from "mosx"
 
-import { GameItem } from "."
+import { GameItem, GameClient } from "."
 
 /**
  * GameState
  */
 
-export class GameState<T extends GameItem = any> extends Mosx {
-  @mx.map("string") public clients: Map<string, string>
+export class GameState<T extends GameItem = any, C extends GameClient = any> extends Mosx {
+  @mx.map("string") public clients: Map<string, C>
   @mx.map(GameItem) public objects: Map<string, GameItem>
   @mx.string public boardId: string = ""
 
@@ -16,7 +16,7 @@ export class GameState<T extends GameItem = any> extends Mosx {
 
   constructor(BoardClass: new (state: GameState<T>, owner?: GameItem, params?: any) => T, params?: any) {
     super()
-    this.clients = new Map<string, string>()
+    this.clients = new Map<string, C>()
     this.objects = new Map<string, GameItem>()
     this.objectIds = []
     this.board = new BoardClass(this, undefined, params)
@@ -37,8 +37,8 @@ export class GameState<T extends GameItem = any> extends Mosx {
     this.objects.set(obj.id, obj)
   }
 
-  public addClient(clientId: string, playerId: string) {
-    this.clients.set(clientId, playerId)
+  public addClient(clientId: string, client: C) {
+    this.clients.set(clientId, client)
   }
 
   public removeClient(clientId: string) {

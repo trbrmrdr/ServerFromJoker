@@ -5,10 +5,7 @@ const plugin: FastifyPluginAsync = async (fastify, options) => {
   fastify.get('/admin*', { schema: { hide: true } }, (req: any, reply: any) => {
     return reply.sendFile('/admin.html')
   })
-  fastify.get('/', { schema: { hide: true } }, (req: any, reply: any) => {
-    return reply.sendFile('/index.html')
-  })
-  fastify.get('/game*', { schema: { hide: true } }, (req: any, reply: any) => {
+  fastify.get('/*', { schema: { hide: true } }, (req: any, reply: any) => {
     return reply.sendFile('/index.html')
   })
 }

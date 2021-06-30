@@ -3,11 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
+  <!-- <link href="/public/css/fonts.css" rel="stylesheet"> -->
+  <!-- <link href="/public/css/icons.css" rel="stylesheet"> -->
+  <link href="/public/css/vuetify.css" rel="stylesheet">
+  <link href="/public/css/cards.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-  <link href="http://selfthinker.github.io/CSS-Playing-Cards/cards.css" rel="stylesheet">
-  <link href="/public/styles.css" rel="stylesheet">
+  <!-- <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <link href="http://selfthinker.github.io/CSS-Playing-Cards/cards.css" rel="stylesheet"> -->
+  <link href="/public/css/styles.css" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
   <title>Joker Game</title>
 </head>
@@ -17,6 +21,12 @@
     <layout></layout>
   </div>
   
+  <!-- <script src="/public/js/vue.js"></script>
+  <script src="/public/js/vuex.js"></script>
+  <script src="/public/js/vue-router.js"></script>
+  <script src="/public/js/vuetify.js"></script>
+  <script src="/public/js/superagent.js"></script>
+  <script src="/public/js/tweenmax.js"></script> -->
   <script src="https://unpkg.com/vue/dist/vue.js"></script>
   <script src="https://unpkg.com/vuex"></script>
   <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
@@ -27,23 +37,10 @@
 
   <script type="text/x-template" id="layout">
     <v-app >
-      <div v-if="token">
-        <appbar></appbar>
-        <v-main>
-          <v-container class="px-4 py-0 fill-height" fluid>
-            <v-row class="fill-height">
-              <v-col>
-                <transition name="fade">
-                  <router-view></router-view>
-                </transition>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-main>
-      </div>
-      <div v-else> 
-        <login></login>
-      </div>
+      <appbar></appbar>
+
+      <router-view></router-view>
+
       <loader></loader>
       <error></error>
     </v-app>
@@ -51,36 +48,30 @@
   <script id="layout">
     const Layout = {
       template: "#layout",
-      computed: {
-        ...Vuex.mapState(["token"]),
-      },
-      mounted() {
-        const token = sessionStorage.getItem("token")
-        return this.$store.dispatch("verifyToken", token)
-      }
     }
   </script>
 
   <script type="text/x-template" id="appbar">
-    <v-app-bar app color="primary" dark elevation="0">
-      <v-app-bar-nav-icon @click.stop="toggleSideBar" class="hidden-md-and-up"></v-app-bar-nav-icon>
+    <v-app-bar color="primary" dark elevation="0" style="max-height: 64px">
       <v-spacer></v-spacer>
-      <v-btn @click="logout" color="secondary" class="mr-2"><v-icon>mdi-logout</v-icon><span class="hidden-sm-and-down">Выход</span></v-btn>
+      <v-btn @click="logout" color="secondary" class="mr-2" v-if="token">
+        <v-icon>mdi-logout</v-icon>
+        <span class="hidden-sm-and-down">Выход</span>
+      </v-btn>
 
     </v-app-bar>
   </script>
   <script id="appbar">
     const AppBar = {
       template: "#appbar",
-      methods: {
-        ...Vuex.mapActions(["toggleSideBar", "logout"])
-      }
+      computed: Vuex.mapState(["token"]),
+      methods: Vuex.mapActions(["logout"])
     }
   </script>
 
   <script type="text/x-template" id="login">
-    <v-dialog v-model="loginDialog" max-width="290" persistent>
-      <v-card>
+
+      <v-card class="mx-auto my-12" max-width="500">
         <v-card-title class="headline">
           Вход
         </v-card-title>
@@ -104,26 +95,24 @@
           <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
-    </v-dialog>
+
   </script>
   <script id="login">
   const Login = {
     template: '#login',
     data: () => ({
       id: "",
-      show: false
     }),
     computed: {
       token() { return this.$store.state.token },
-      loginDialog: {
-        get() { return !this.token },
-        set(value) { }
-      },
     },
     methods: {
       async login() {
         try {
           await this.$store.dispatch("authenticate", this.id)
+          if (this.token) {
+            this.$router.push({ path: "/" })
+          }
         } catch (error) {
           console.log(error)
         }
@@ -169,7 +158,7 @@
         <template v-for="(room, index) in rooms">
           <v-list-item :key="room.roomId" @click="joinRoom(room)">
             <v-list-item-content>
-              <v-list-item-title v-html="room.name + ': ' + room.options.name"></v-list-item-title>
+              <v-list-item-title v-html="room.name"></v-list-item-title>
               <v-list-item-subtitle v-html="room"></v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
@@ -181,15 +170,19 @@
     const Main = {
       template: '#main',
       computed: {
-        rooms() { return this.$store.getters.rooms },
+        rooms() { return this.$store.state.rooms },
       },
       methods: {
-        joinRoom(room) { 
+        async joinRoom(room) { 
           console.log('join room', room)
+          await this.$store.dispatch("joinRoom", { roomId: room.id })
+          const roomId = this.$store.state.roomId
+          if (roomId) {
+            this.$router.push({ path: `/game/${roomId}`})
+          }
         },
       }
     }
-    
   </script>
 
   <script type="text/x-template" id="deck">    
@@ -209,48 +202,34 @@
       }),
       computed: {
         board() { return this.$store.getters.board },
-        deck() { return this.$store.getters.deck },
-        inShuffle() { return this.board && this.$store.getters.object(this.board.deckId).inShuffle }
-      },
-      watch: {
-        inShuffle(value) {
-          if (value) {
-            setTimeout(() => {
-              this.cards = [...this.$el.children[0].children]
-              this.cards.forEach(el => {
-                const card = this.$store.getters.object(el.children[0].id)
-                const rect = el.getBoundingClientRect()
-                this.$store.commit("setObjectPos", { id: card.id, pos: { x: rect.left, y: rect.top }})
-              })
-              this.animateRandomCard()
-            }, 100)
-          }
-        }
+        deck() { return this.$store.getters.objectItemsObject(this.board.props.deck) || [] },
       },
       mounted() {
         this.cards = [...this.$el.children[0].children]
-        this.animateRandomCard()
-      },
-      methods: {
-        animateRandomCard() {
-          if (this.inShuffle && this.cards.length) {
-            // select random card
-            const index = Math.floor(Math.random() * this.cards.length)
-            const card = this.cards.splice(index, 1)[0]
-            
-            // animate card
-            TweenMax.to(card, 0.2, { 
-              x: Math.floor(Math.random() * 3 - 1) * 80, 
-              y: Math.floor(Math.random() * 3 - 1) * 120, 
-              repeat: 1, 
-              yoyo: true, 
-              onComplete: () => this.cards.push(card)
-            })
-  
-            // animate next card
-            setTimeout(() => this.animateRandomCard(), 60)
-          }
-        }
+        this.cards.forEach(el => {
+          const card = this.$store.getters.object(el.children[0].id)
+          const rect = el.getBoundingClientRect()
+          this.$store.commit("setMeta", { id: card.id, data: { x: rect.left, y: rect.top } })
+        })
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="trump-slot">    
+    <div class="card-slot">
+      <ul :id="board.props.trumpSlot" class="deck">
+        <li v-for="card in trumpSlot" :key="card.id">
+          <card :data="card" />
+        </li>
+      </ul>
+    </div>
+  </script>
+  <script id="trump-slot">
+    const TrumpSlot = {
+      template: '#trump-slot',
+      computed: {
+        board() { return this.$store.getters.board },
+        trumpSlot() { return this.$store.getters.objectItemsObject(this.board.props.trumpSlot) || [] },
       }
     }
   </script>
@@ -273,14 +252,15 @@
         cardRank() { return this.face.value },
         cardSuit() { return suitCode(this.face.suit) },
       },
-      mounted() { !this.data.pos && this.updatePos() },
+      mounted() { !this.data.pos && this.updateMeta() },
       // update card pos when window resized
-      created() { window.addEventListener("resize", this.updatePos) },
-      destroyed() { window.removeEventListener("resize", this.updatePos) },
+      created() { window.addEventListener("resize", this.updateMeta) },
+      destroyed() { window.removeEventListener("resize", this.updateMeta) },
       methods: {
-        updatePos() {
+        updateMeta() {
+          if (!this.$el.getBoundingClientRect) { return }
           const rect = this.$el.getBoundingClientRect()
-          this.$store.commit("setObjectPos", { id: this.data.id, pos: { x: rect.left, y: rect.top }})
+          this.$store.commit("setMeta", { id: this.data.id, data: { x: rect.left, y: rect.top } })
         }
       }
     }
@@ -289,47 +269,69 @@
 
   <script type="text/x-template" id="player-board">    
     <div class="player-board" :class="tag">
-      <div id="title" class="text-center title" :class="tag">
-        <v-btn rounded color="green" dark>{{ player.user.name }}</v-btn>
-        <v-icon v-if="!player.connected">mdi-wifi-off</v-icon>
+      <div v-if="player" :id="player.id">
+        <div id="title" class="text-center title" :class="tag">
+          <v-btn rounded color="green" dark>{{ player.id }}</v-btn>
+          <v-icon v-if="!player.connected">mdi-wifi-off</v-icon>
+        </div>
+        <div class="card-slot trash" :class="tag">
+          <ul :id="player.props.trash" class="deck" style="height: 0px">
+            <transition-group @enter="animateSlotEnter">
+              <li v-for="card in playerTrash" :key="card.id">
+                <card :data="card" style="opacity: 0" />
+              </li>
+            </transition-group>
+          </ul>
+        </div>
+        <div class="card-slot" :class="tag" :style="transform +'; '+ center">
+          <ul :id="player.props.hand" :class="pos ? 'hand' : 'hand my'">
+            <transition-group @enter="animateSlotEnter">
+              <li v-for="card in playerHand" :key="card.id" @click="play(card.id)">
+                <card :data="card" :tag="cardActions(card.id).length && 'a'"/>
+              </li>
+            </transition-group>
+          </ul>
+        </div>
+        <div :id="player.props.cardSlot" class="card-slot" :class="otag">
+          <ul :id="player.props.cardSlot" class="deck">
+            <transition-group @enter="animateSlotEnter">
+              <li v-for="card in cardSlot" :key="card.id">
+                <card :data="card" />
+              </li>
+            </transition-group>
+          </ul>
+        </div>
+        <div class="bid text-center" :class="timerPos" v-if="player.bid >= 0">
+          <v-chip class="ma-0" dark color="green" label>{{ player.bid }}</v-chip>
+          <v-chip class="ma-0" dark color="blue" label>{{ player.tricks < 0 ? "" : player.tricks }}</v-chip>
+        </div>
+        <div class="joker text-center" :class="timerPos" v-if="player.joker.suit >= 0">
+          <v-avatar color="black">
+            <v-icon dark>
+              {{ jokerSuit }}
+            </v-icon>
+          </v-avatar>
+          <v-chip class="ma-0" dark color="orange" label>{{ player.joker.higher ? "высшие" : "пусть берут" }}</v-chip>
+        </div>
+        <div v-if="timer >= 1" class="timer" :class="timerPos">
+          <v-progress-circular
+            :rotate="-90"
+            :size="50"
+            color="teal"
+            :value="timer/maxTimer*100"
+          >
+            {{ timer }}
+          </v-progress-circular>
+        </div>
+        <div v-if="player.suit >= 0" class="player-suit">
+          <v-avatar :color="color" size="48">
+            <span class="white--text headline">{{ suitCode }}</span>
+          </v-avatar>
+        </div>
       </div>
-      <div class="card-slot trash" :class="tag">
-        <ul :id="player.trashId" class="deck" style="height: 0px">
-          <transition-group @enter="animateSlotEnter">
-            <li v-for="card in playerTrash" :key="card.id">
-              <card :data="card" style="opacity: 0" />
-            </li>
-          </transition-group>
-        </ul>
-      </div>
-      <div class="card-slot" :class="tag" :style="transform + '; ' + center">
-        <ul :id="player.handId" :class="pos ? 'hand' : 'hand my'">
-          <transition-group @enter="animateSlotEnter">
-            <li v-for="card in playerHand" :key="card.id" @click="play(player.id, card.id)">
-              <card :data="card" :tag="cardAction(card.id) && 'a'"/>
-            </li>
-          </transition-group>
-        </ul>
-      </div>
-      <div :id="player.cardSlotId" class="card-slot" :class="otag">
-        <transition @enter="animateEnter">
-          <card v-if="card" :data="card" />
-        </transition>
-      </div>
-      <div v-if="timer >= 1" class="timer" :class="timerPos">
-        <v-progress-circular
-          :rotate="-90"
-          :size="50"
-          color="teal"
-          :value="timer/maxTimer*100"
-        >
-          {{ timer }}
-        </v-progress-circular>
-      </div>
-      <div  v-if="player.suit >= 0" class="player-suit">
-        <v-avatar :color="color" size="48">
-          <span class="white--text headline">{{ suitCode }}</span>
-        </v-avatar>
+      <div v-if="!player && player !== null" :class="tag" class="card-slot">
+        <v-icon size="60" @click="placeAction">mdi-help-circle-outline</v-icon>
+        <v-btn @click="addbot">add bot</v-btn>
       </div>
     </div>
   </script>
@@ -339,17 +341,28 @@
       data: () => ({
         maxTimer: -1
       }),
-      props: ['player', 'pos'],
+      props: ['pos'],
       computed: {
-        cardAction() { return this.$store.getters.cardAction },
-        playerHand() { return this.$store.getters.playerHand(this.player) },
-        playerTrash() { return this.$store.getters.playerTrash(this.player) },
-        suitCode() { return suitCode(this.player.suit) },
-        card() { 
-          const slot = this.$store.getters.playerCard(this.player)
-          return slot.length && slot[0]
+        ...Vuex.mapGetters(["me", "objectProp", "objectItemsObject", "players"]),
+        player() { return this.players && this.players.find((p) => p.index === Number(this.pos)) },
+        playerHand() {
+          if (this.player === this.me) {
+            const cardRank = ["A", "K", "Q", "J", "10", "9", "8", "7", "6"]
+            const cardPos = ({ face = {} }) => face.suit * 10 + cardRank.indexOf(face.value)
+            const cards = this.objectItemsObject(this.me.props.hand)
+            return cards.sort((c1, c2) => cardPos(c1) - cardPos(c2))
+          } else {
+            return this.player && this.objectItemsObject(this.player.props.hand) || []
+          }
         },
-        timer() { return this.$store.getters.timer(this.player.timerId) },
+        playerTrash() { return this.objectItemsObject(this.player.props.trash) },
+        suitCode() { return suitCode(this.player.suit) },
+        cardSlot() { 
+          return this.player && this.objectItemsObject(this.player.props.cardSlot) || []
+        },
+        timer() {
+          return this.player && this.objectProp(this.player, "timer").value || -1
+        },
         tag() {
           return ['bottom', 'left', 'top', 'right'][this.pos]
         },
@@ -367,7 +380,10 @@
         },
         center() {
           const num = this.playerHand.length
-          return ["right: " + num * 35 + "px", "", "", ""][this.pos]
+          return ["right: " + num * 35 + "px", "", "", "right: " + num * 20 + "px"][this.pos]
+        },
+        jokerSuit() {
+          return ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"][this.player.joker.suit]
         }
       },
       watch: {
@@ -376,14 +392,33 @@
         }
       },
       methods: {
-        play(playerId, cardId) { this.$store.dispatch("playerAction", { playerId, cardId }) },
-        animateEnter(el, done) {
-          const card = this.$store.getters.object(el.id)
-          const rect = el.getBoundingClientRect()
-          TweenMax.from(el, 0.5, { x: card.pos.x - rect.left, y: card.pos.y - rect.top, rotation: 180, opacity: 1, onComplete: done })
-          this.$store.commit("setObjectPos", { id: card.id, pos: { x: rect.left, y: rect.top }})
+        placeAction() {
+          this.$store.state.send("place", Number(this.pos))
         },
-        animateSlotEnter(el, done) { this.animateEnter(el.firstChild, done) }
+        addbot() {
+          this.$store.state.send("addbot", Number(this.pos))
+        },
+        cardActions(cardId) {
+          const actions = this.me && Object.values(this.me.actions || {}) || []
+          return actions.filter(action => action.data && action.data.objectId === cardId)
+        },
+        play(cardId) {
+          const possibleActions = this.cardActions(cardId)
+          if (possibleActions.length === 1) {
+            this.$store.dispatch("execAction", possibleActions[0].id)
+          } else if (possibleActions.length > 1) {
+            // this.$store.commit("selectCard", cardId)
+            this.$store.commit("setMeta", { id: this.$store.getters.board.id, data: { selectedCardId: cardId } })
+          }
+        },
+        animateSlotEnter(el, done) {
+          const { left, top } = el.firstChild.getBoundingClientRect()
+          // this.$store.dispatch("animate", { el: el.firstChild, x: left, y: top, r: 180, done })
+        },
+        animateEnter(el, done) {
+          const { left, top } = el.getBoundingClientRect()
+          // this.$store.dispatch("animate", { el, x: left, y: top, r: 180, done })
+        },
       }
     }
   </script>
@@ -409,34 +444,204 @@
     }
   </script>
 
-  <script type="text/x-template" id="gameLayout">    
-    <div id="game-table" class="playingCards faceImages">
-      <div class="game-board">
-        <deck v-if="board.scene !== 'initGame'"></deck>
-        <div class="game-trump">
-          <span class="suit"></span>
+  <script type="text/x-template" id="select-trump-dialog">
+    <v-dialog v-model="dialog" persistent width="320">
+      <v-card flat class="py-12">
+        <v-card-text>
+          <v-row align="center" justify="center" >
+            <v-col cols="12">
+              <p class="text-center">
+                Выберите козырь
+              </p>
+            </v-col>
+            <v-btn-toggle>
+              <v-btn v-for="action of actions" :key="action.id" @click="execAction(action.id)">
+                <v-icon ></v-icon>
+              </v-btn>
+            </v-btn-toggle>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="select-trump-dialog">
+    const SelectTrump = {
+      template: "#select-trump-dialog",
+      computed: {
+        ...Vuex.mapGetters([ "me" ]),
+        actions() {
+          const actions = this.me && Object.values(this.me.actions || {}) || []
+          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond", "mdi-xamarin-outline"]
+          return actions.filter(({ name }) => name === "setTrump").map((a) => ({ id: a.id, icon: icons[a.data] }))
+        },
+        dialog: {
+          get() { return this.$store.getters.dialog("selectTrump") },
+          set(value) {  }
+        },
+      },
+      methods: {
+        execAction(actionId) {
+          this.$store.dispatch("execAction", actionId)
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="select-joker-dialog">
+    <v-dialog v-model="dialog" persistent width="320">
+      <v-card flat class="py-12">
+        <v-card-text>
+          <v-row align="center" justify="center">
+            <v-col cols="12">
+              <p class="text-center">
+                Выберите как играть джокером
+              </p>
+            </v-col>
+            <p class="text-center">
+              Пусть берут
+            </p>
+            <v-btn-toggle>
+              <v-btn v-for="action of actions" :key="action.id" v-if="action.higher" @click="execAction(action.id)">
+                <v-icon>{{ action.icon }}</v-icon>
+              </v-btn>
+            </v-btn-toggle>
+            <p class="text-center">
+              Высшие 
+            </p>
+            <v-btn-toggle>
+              <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
+                <v-icon>{{ action.icon }}</v-icon>
+              </v-btn>
+            </v-btn-toggle>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="select-joker-dialog">
+    const SelectJoker = {
+      template: "#select-joker-dialog",
+      computed: {
+        ...Vuex.mapGetters([ "me" ]),
+        actions() {
+          const actions = this.me && Object.values(this.me.actions || {}) || []
+          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"]
+          return actions.filter(({ name }) => name === "setJoker").map(({ id, data }) => ({ id: id, higher: data.higher, icon: icons[data.suit] }))
+        },
+        dialog: {
+          get() { return this.$store.getters.dialog("selectJoker") },
+          set(value) {  }
+        },
+      },
+      methods: {
+        execAction(actionId) {
+          this.$store.dispatch("execAction", actionId)
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="select-bid-dialog">
+    <v-dialog v-model="dialog" persistent width="320">
+      <v-card flat class="py-12" >
+        <v-card-text>
+          <v-row align="center" justify="center">
+            <v-col cols="12">
+              <p class="text-center">
+                Выберите кол-во взяток
+              </p>
+            </v-col>
+            <v-btn-toggle>
+              <v-btn v-for="(action,i) of actions" :key="action.id" v-if="i < 5" @click="execAction(action.id)">
+                <v-icon >{{ action.bid }}</v-icon>
+              </v-btn>
+            </v-btn-toggle>
+            <v-btn-toggle>
+              <v-btn v-for="(action,i) of actions" :key="action.id" v-if="i > 4" @click="execAction(action.id)">
+                <v-icon>{{ action.bid }}</v-icon>
+              </v-btn>
+            </v-btn-toggle>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="select-bid-dialog">
+    const SelectBid = {
+      template: "#select-bid-dialog",
+      computed: {
+        ...Vuex.mapGetters([ "me" ]),
+        actions() {
+          const actions = this.me && Object.values(this.me.actions || {}) || []
+          return actions.filter(({ name }) => name === "setBid").map((a) => ({ id: a.id, bid: a.data }))
+        },
+        dialog: {
+          get() { return this.$store.getters.dialog("selectBid") },
+          set(value) {  }
+        },
+      },
+      methods: {
+        execAction(actionId) {
+          this.$store.dispatch("execAction", actionId)
+        }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="game-layout"> 
+    <div id="game-container">   
+      <v-btn v-if="players.lendth < 4" class="mx-2" dark small color="green" @click="addBot()">
+        <v-icon>mdi-plus</v-icon>
+      </v-btn>
+      <div id="game-table" class="playingCards faceImages">
+        <div class="game-board" v-if="board && board.scene !== 'init'">
+          <deck class="game-deck"></deck>
+          <trump-slot class="game-trump"></trump-slot>
+          <div class="game-trump" v-if="trumpIcon" style="top: 40px">
+            <v-avatar color="black">
+              <v-icon dark>
+                {{ trumpIcon }}
+              </v-icon>
+            </v-avatar>
+          </div>
         </div>
+        <player-board pos=0></player-board>
+        <player-board pos=1></player-board>
+        <player-board pos=2></player-board>
+        <player-board pos=3></player-board>
+        <select-trump-dialog />
+        <select-bid-dialog />
+        <select-joker-dialog />
       </div>
-      <player-board v-for="(player, index) in playersList" :key="player.id" :player="player" :pos="index"></player-board>
     </div>
   </script>
-  <script id="gameLayout">
+  <script id="game-layout">
     const MIN_WIDTH = 550;
     const MAX_WIDTH = 1500;
     const MIN_HEIGHT = 750;
     const MAX_HEIGHT = 1100;
 
     const GameLayout = {
-      template: '#gameLayout',
+      template: '#game-layout',
+      props: ["id"],
       computed: {
-        ...Vuex.mapGetters([
-          "playersList", "board", "me"
-        ])
+        ...Vuex.mapGetters([ "players", "board", "me", "objectProp" ]),
+        trumpIcon() { 
+          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond", "mdi-xamarin-outline"]
+          const trump = this.objectProp(this.board, "trump")
+          return icons[trump.suit] 
+        }
+      },
+      watch: {
+        id(val) {
+          console.log(id)
+        }
       },
       methods: {
+        addBot() { this.$store.dispatch("addBot") },
         resize() {
           // get parent element size
-          const { clientWidth: width, clientHeight: height } = this.$el.parentElement
+          const { clientWidth: width, clientHeight: height } = this.$el.firstChild
           
           // calculate scale for width & height 
           let scaleX = width / (width < MIN_WIDTH && MIN_WIDTH || width > MAX_WIDTH && MAX_WIDTH || width)
@@ -454,14 +659,27 @@
           var elHeight = Math.min(Math.max(height / scale, MIN_HEIGHT), MAX_HEIGHT)
 
           // update #game-table inline style
-          const { style } = this.$el
+          const { style } = this.$el.firstChild
+          if (!style) { return }
           style.width = scale !== 1 && elWidth + "px" || "",
           style.height = scale !== 1 && elHeight + "px" || "",
           style.transform = scale !== 1 && "scale(" + scale + ")" || ""
         },
       },
-      mounted() {
-        window.addEventListener("resize", this.resize)
+      async mounted() {
+        const roomId = this.$route.params.id
+        if (this.$route.params.id !== this.$store.state.roomId) {
+          try {
+            console.log("Try to reconnect", roomId)
+            await this.$store.dispatch("reconnect", roomId)
+            console.log("Reconnected!")
+          } catch (error) {
+            console.log("Cannot reconnect room", error)
+            this.$router.push({ path: "/" })
+            return 
+          }          
+        }
+        window.addEventListener("resize", this.resize) 
         this.resize()
       },
     }
@@ -514,9 +732,9 @@
         async create() {
           const { name, bet, password, autoplay, timer } = this.$data
           await this.$store.dispatch("createRoom", { bet, password, autoplay, timer })
-          const room = this.$store.state.room
-          if (room) {
-            this.$router.push({ path: `/game/${room.id}`})
+          const roomId = this.$store.state.roomId
+          if (roomId) {
+            this.$router.push({ path: `/game/${roomId}`})
           }
         }
       }
@@ -563,6 +781,7 @@
         rooms: [],
       },
       getters: {
+        dialog: ({ dialog }, { me }) => (name) => me && me.dialog === name || false,
         // get object by id
         object: ({ objects }) => (id) => objects[id] || null,
         // get meta by id
@@ -577,7 +796,7 @@
         objectItemsObject: ({ }, { objectItems, object }) => (id) => objectItems(id).map(itemId => object(itemId)),
 
         // get client's player
-        me: ({ clients, clientId }, { object }) => clientId && object(clients[clientId]) || null,
+        me: ({ clients, clientId }, { object }) => clientId && clients[clientId] && object(clients[clientId].playerId) || null,
         // get board
         board: ({ boardId }, { object }) => object(boardId),
         // get list of players
@@ -596,6 +815,7 @@
           state.send = (type, data) => room.send(type, data)
         },
         setRooms(state, rooms) { state.rooms = rooms },
+        setDialog(state, { name, value }) { state.dialog = { name: value } },
         updateRoom(state, { roomId, data }) {
           const index = state.rooms.findIndex((room) => room.id === roomId)
           if (data === null) {
@@ -610,6 +830,14 @@
         },
         setState(state, snapshot) {
           Object.keys(snapshot).forEach((key) => Vue.set(state, key, snapshot[key]))
+        },
+        setMeta: (state, { id, data }) => Vue.set(state.meta, id, data),
+        setMetaProp: (state, { id, prop, data }) => {
+          if (state.meta[id]) {
+            Vue.set(state.meta[id], prop, data)
+          } else {
+            Vue.set(state.meta, id, { [prop]: data })
+          }
         },
         add(state, { value, key, path }) {
           let obj = state
@@ -646,28 +874,29 @@
           try {
             console.log("verify token", token)
             const auth = await client.verify(token)
-            commit("setToken", auth ? token : "")
-            commit("setLoading", false)
+            if (!auth) {
+              throw new Error()
+            } else {
+              commit("setState", { token, loading: false })
+            }
             return dispatch("joinLobby")
           } catch (error) {
-            commit("setToken", "")
-            commit("setLoading", false)
+            commit("setState", { token: "", loading: false })
+            router.push({ path: "/login" })
           }
         },
         async authenticate({ commit, dispatch }, id) {
-          commit("setLoading", true)
+          commit("setState", { loading: true })
           try {
             const auth = await client.authenticate({ id })
             console.log("authenticate", auth)
-            commit("setToken", auth.token)
             // commit("setProfile", auth.data)
             sessionStorage.setItem("token", auth.token)
-            commit("setLoading", false)
+            commit("setState", { loading: false, token: auth.token })
             return dispatch("joinLobby")
           } catch (error) {
             console.log("Error", error)
-            commit("setToken", "")
-            commit("setLoading", false)
+            commit("setState", { token: "", loading: false })
           }
         },
         async joinLobby({ commit, dispatch }) {
@@ -736,6 +965,7 @@
 
         async createRoom({ dispatch }, options) {
           room = await client.createRoom('joker', options)
+          console.log("Room created", room)
           await dispatch("initRoomHandlers", room)
         },
 
@@ -744,7 +974,7 @@
           dispatch("initRoomHandlers", room)
         },
 
-        async reconnect({ dispatch }, { roomId, sessionId }) {
+        async reconnect({ dispatch }, roomId) {
           const timer = setTimeout(() => {
             Promise.reject()
           }, 1000)
@@ -788,9 +1018,25 @@
       mode: "history",
       routes: [
         { path: '/', component: Main },
+        { path: '/login', component: Login },
         { path: '/game/create', component: CreateGame },
         { path: '/game/:id', component: GameLayout, props: true },
       ]
+    })
+
+    router.beforeEach(async (to, from, next) => {
+      if (to.path !== "/login" && !store.state.token) {
+        const token = sessionStorage.getItem("token")
+        if (!token) { return next({ path: '/login' }) }
+        try {
+          await store.dispatch("verifyToken", token)
+          next()
+        } catch (error) {
+          next({ path: '/login' })
+        }
+      } else {
+        next()
+      }
     })
   </script>
 
@@ -798,12 +1044,15 @@
     Vue.component('appbar', AppBar)
     Vue.component('loader', Loader)
     Vue.component('layout', Layout)
-    Vue.component('login', Login)
     Vue.component('error', ErrorMessage)
 
     Vue.component('deck', Deck)
     Vue.component('card', Card)
     Vue.component('player-board', PlayerBoard)
+    Vue.component('trump-slot', TrumpSlot)
+    Vue.component('select-trump-dialog', SelectTrump)
+    Vue.component('select-joker-dialog', SelectJoker)
+    Vue.component('select-bid-dialog', SelectBid)
 
     new Vue({
       el: '#app',
