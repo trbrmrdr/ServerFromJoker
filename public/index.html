@@ -193,7 +193,7 @@
           <li v-for="card in deck" :key="card.id">
             <card :data="card" />
           </li>
-        <transition-group>
+        </transition-group>
       </ul>
     </div>
   </script>
@@ -267,7 +267,6 @@
         }
       }
     }
-    
   </script>
 
   <script type="text/x-template" id="player-board">    
@@ -400,7 +399,7 @@
           this.$store.state.send("place", this.playersList[Number(this.pos)])
         },
         addbot() {
-          this.$store.state.send("addbot", Number(this.pos))
+          this.$store.state.send("addbot", this.playersList[Number(this.pos)])
         },
         cardActions(cardId) {
           const actions = this.me && Object.values(this.me.actions || {}) || []

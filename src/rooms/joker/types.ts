@@ -134,7 +134,7 @@ export class JokerBoard extends GameItem {
 
   protected onCreate(options: IJokerOptions) {
     this.options = new JokerOptions(this, options)
-    this.scene = "init"
+    this.scene = "waitPlayers"
     this.round = 0
 
     this.deck = this.addProp(Cards, "deck", { cardsSide: Face.down })

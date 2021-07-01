@@ -184,7 +184,7 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
 
     if (index === undefined) {
       const places = [0, 1, 2, 3]
-      for (const [, { player }] of this.state.clients) {
+      for (const { player } of this.state.clients.values()) {
         if (player) {
           places[player.index] = -1
         }
@@ -196,7 +196,16 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
         // no free places
         return 
       }
+    } else {
+      for (const { player } of this.state.clients.values()) {
+        if (player && player.index === index) {
+          // place is not free
+          return
+        }
+      }
     }
+
+
     const jokerClient = this.state.clients.get(id)!
     // join game
     const player = new JokerPlayer(this.state, { clientId: jokerClient.id, index })

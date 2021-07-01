@@ -6,7 +6,7 @@ enum Suit {
   diams = 3
 }
 
-type IJokerScene = "initGame" | "inGame" | "endGame"
+type IJokerScene = "waitPlayers" | "initGame" | "gameRound" | "gameScore" | "endGame"
 type IPlayerDialog = "selectTrump" | "selectBid" | "selectJoker"
 
 type CardValue = "A" | "K" | "Q" | "J" | "10" | "9" | "8" | "7" | "6"

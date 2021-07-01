@@ -2,22 +2,26 @@ import { JokerContext } from "../types"
 import { debuglog } from "../common"
 
 export const gameFlow = async (ctx: JokerContext) => {
-  ctx.state.board.scene = "game"
+  const { board } = ctx.state
+  board.scene = "initGame"
   debuglog(ctx, ctx.roles.active.player, `>> init game`)
-
+  
   // init game phase
   await ctx.next("initGame")
-
+  
   // game cycle
-  while (ctx.data.phase !== "endGame" && ctx.state.board.round < 24) {
+  while (ctx.data.phase !== "endGame" && board.round < 24) {
+    board.scene = "gameRound"
     debuglog(ctx, ctx.roles.active.player, `>> game round`)
-
+    
     await ctx.next("roundFlow")
-
+    
     if (ctx.data.phase === "endGame") { continue }
+    board.scene = "gameScore"
     debuglog(ctx, ctx.roles.active.player, `>> end round`)
     await ctx.next("endRound")
   }
+  board.scene = "endGame"
   debuglog(ctx, ctx.roles.active.player, `>> end game`)
   return ctx.next("endGame", ctx.players[0])
 }
