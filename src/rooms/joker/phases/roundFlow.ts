@@ -82,7 +82,7 @@ export const roundFlow = async (ctx: JokerContext) => {
         } else {
           const suit = isJocker(initiatorCard) ? initiator.player.joker.suit : initiatorCard.face.suit
           
-          player.addAction("setJoker", { suit, higher: true })
+          player.addAction("setJoker", { suit: trump, higher: true })
           player.addAction("setJoker", { suit, higher: false })
         }
         const actions = Array.from(player.actions.values())
@@ -151,9 +151,13 @@ export const roundFlow = async (ctx: JokerContext) => {
       p.cardSlot.moveAll(winner.trash)
     })
   }
+
+  ctx.players.forEach((p) => {
+    const i = (ctx.state.board.round - 1) * 8 + p.index * 2
+    ctx.state.board.score[i] = p.bid
+    ctx.state.board.score[i+1] = p.tricks
+  })
+
   ctx.state.board.round++
   ctx.roles.dealer.moveNext()
-
-  debuglog(ctx, ctx.roles.active.player, `>> end game`)
-  return ctx.next("endRound")
 }

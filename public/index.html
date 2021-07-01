@@ -459,7 +459,7 @@
             </v-col>
             <v-btn-toggle>
               <v-btn v-for="action of actions" :key="action.id" @click="execAction(action.id)">
-                <v-icon ></v-icon>
+                <v-icon>{{ action.icon }}</v-icon>
               </v-btn>
             </v-btn-toggle>
           </v-row>
@@ -474,7 +474,7 @@
         ...Vuex.mapGetters([ "me" ]),
         actions() {
           const actions = this.me && Object.values(this.me.actions || {}) || []
-          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond", "mdi-xamarin-outline"]
+          const icons = ["mdi-cards-spade", "mdi-cards-club", "mdi-cards-heart", "mdi-cards-diamond", "mdi-xamarin-outline"]
           return actions.filter(({ name }) => name === "setTrump").map((a) => ({ id: a.id, icon: icons[a.data] }))
         },
         dialog: {
@@ -504,7 +504,7 @@
               Пусть берут
             </p>
             <v-btn-toggle>
-              <v-btn v-for="action of actions" :key="action.id" v-if="action.higher" @click="execAction(action.id)">
+              <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
                 <v-icon>{{ action.icon }}</v-icon>
               </v-btn>
             </v-btn-toggle>
@@ -512,7 +512,7 @@
               Высшие 
             </p>
             <v-btn-toggle>
-              <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
+              <v-btn v-for="action of actions" :key="action.id" v-if="action.higher" @click="execAction(action.id)">
                 <v-icon>{{ action.icon }}</v-icon>
               </v-btn>
             </v-btn-toggle>
@@ -615,6 +615,7 @@
         <select-trump-dialog />
         <select-bid-dialog />
         <select-joker-dialog />
+        <game-score />
       </div>
     </div>
   </script>
@@ -690,7 +691,7 @@
     }
   </script>
 
-  <script type="text/x-template" id="createGame">    
+  <script type="text/x-template" id="create-game">    
     <v-container>
       <h1>Создать комнату</h1>
       <v-row class="mb-6" justify="center" no-gutters>
@@ -717,9 +718,9 @@
       </v-row>
     </v-container>
   </script>
-  <script id="createGame">
+  <script id="create-game">
     const CreateGame = {
-      template: '#createGame',
+      template: '#create-game',
       data: () => ({
         name: "",
         bet: 0,
@@ -744,6 +745,152 @@
         }
       }
     }
+  </script>
+
+  <script type="text/x-template" id="game-score">
+    <v-dialog v-model="dialog" width="600">
+      <v-container>
+        <v-row no-gutters >
+          <v-col cols="1">
+          </v-col>
+          <v-col v-for="p in 4" :key="p">
+            <v-card
+              class="pa-2"
+              outlined
+              tile
+            >
+              <v-chip
+                color="secondary lighten-2"
+                class="ml-0 mr-2"
+              >
+              {{ p }}
+              </v-chip>
+              {{ playerName(p) }}
+            </v-card>
+          </v-col>
+
+        </v-row>
+        <v-row no-gutters v-for="r in 29" :key="r" align="center">
+          <v-col cols="1"  >
+            <span class="float-right pr-4">{{ rowLable(r) }}</span>
+          </v-col>
+          <v-col v-for="p in 4" :key="p" >
+            <v-card
+              class="pa-2"
+              outlined
+              tile
+              :class="showChip(r) ? '' : 'grey lighten-5'"
+            >
+              <v-card-text class="pt-0 pb-0 text-center">
+                <v-chip
+                  v-if="showChip(r)"
+                  color="green lighten-4"
+                  class="ml-0 mr-2 black--text float-left"
+                  label
+                  small 
+                >
+                  {{ rowDataChip(r,p) }}
+                </v-chip>
+          
+                <span :class="showChip(r) ? '' : 'font-weight-bold' ">{{ rowData(r,p) }}</span>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-dialog>
+  </script>
+  <script id="game-score">
+  const GameScore = {
+    template: '#game-score',
+    computed: {
+      ...Vuex.mapGetters(["board", "players"]),
+      dialog: {
+        get() { return this.board && this.board.scene === "gameScore" },
+        set(value) {  }
+      },
+    },
+    methods: {
+      playerName(p) {
+        if (!this.players[p-1]) { return "" }
+        return this.players[p-1].name
+      },
+      shift(index) {
+        let shift = 0
+        for (let i of [9, 14, 23, 28, 29]) {
+          shift += index >= i ? 1 : 0
+        }
+        return shift
+      },
+      showChip(index) {
+        return ![9, 14, 23, 28, 29].includes(index)
+      },
+      rowLable(index) {
+        if ([9, 14, 23, 28, 29].includes(index)) {
+          return ""
+        }
+        if (index < 9) {
+          return index
+        } else if (index < 14) {
+          return 9
+        } else if (index < 23) {
+          return Math.abs(index - 23)
+        } else {
+          return 9
+        }
+      },
+      rowDataChip(index, player) {
+        if ([9, 14, 23, 28, 29].includes(index) || !this.board) {
+          return ""
+        }
+
+        const round = index - this.shift(index)
+        return this.board.score[(round-1)*8+(player-1)*2]
+      },
+      rowData(index, player) {
+        if (!this.board) { return "" }
+
+        const calcScore = (r, p) => {
+          if (r*8+p*2 >= this.board.score.length) { return "." }
+
+          const bid = this.board.score[r*8+p*2]
+          const v = this.board.score[r*8+p*2 + 1]
+          const cards = r % 12 > 7 ? 9 : (r > 7) ? Math.abs(r - 20) : r + 1
+
+          if (bid === v) {
+            if (v === 9) { return 900 }
+            if (v === cards) { return v * 100 }
+            return 50 + 50 * v
+          } else {
+            if (v === 0) { return -200 }
+            return 10 * v
+          }
+        }
+
+        const calcTotal = (r0, r1, p) => {
+          if (calcScore(r1, p) === ".") { return "." }
+          let total = 0
+          for (let r = r0; r <= r1; r++) {
+            const score = calcScore(r, p)
+            total += score
+          }
+          return total
+        }
+
+        switch (index) {
+          case 9: return calcTotal(0, 7, player-1)
+          case 14: return calcTotal(8, 11, player-1)
+          case 23: return calcTotal(12, 19, player-1)
+          case 28: return calcTotal(20, 23, player-1)
+          case 29: return calcTotal(0, 23, player-1)
+        
+          default:
+            const round = index - this.shift(index)
+            return calcScore(round - 1, player - 1)
+        }        
+      }
+    }
+  }
   </script>
 
   <script id="magx">
@@ -1069,6 +1216,7 @@
     Vue.component('select-trump-dialog', SelectTrump)
     Vue.component('select-joker-dialog', SelectJoker)
     Vue.component('select-bid-dialog', SelectBid)
+    Vue.component('game-score', GameScore)
 
     new Vue({
       el: '#app',

@@ -136,6 +136,7 @@ export class JokerBoard extends GameItem {
     this.options = new JokerOptions(this, options)
     this.scene = "waitPlayers"
     this.round = 0
+    this.score = []
 
     this.deck = this.addProp(Cards, "deck", { cardsSide: Face.down })
     this.trumpSlot = this.addProp(Cards, "trumpSlot",  { cardsSide: Face.up })
