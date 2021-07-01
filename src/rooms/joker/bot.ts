@@ -3,6 +3,8 @@ import { LocalClient } from "magx"
 import { rand, JokerBoard, JokerPlayer, JokerContext, JokerState } from "./types"
 import { GameState, PlayerAction } from "./engine/types"
 
+const botDelay = 0.1
+
 export const createBot = (ctx: JokerContext, client: LocalClient, params?: any) => {
   let acting = false
   const state = client.room.state as JokerState
@@ -38,7 +40,7 @@ export const createBot = (ctx: JokerContext, client: LocalClient, params?: any) 
 
       if (actions.length) {
         const action = selectBestAction(client.room.state, player)
-        const delay = rand(10) * ctx.options.botDelay * 1000
+        const delay = rand(10) * botDelay * 1000
 
         setTimeout(() => {
           client.send("action", { actionId: action.id })

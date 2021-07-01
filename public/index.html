@@ -189,9 +189,11 @@
   <script type="text/x-template" id="deck">    
     <div class="card-slot">
       <ul :id="board.props.deck" class="deck">
-        <li v-for="card in deck" :key="card.id">
-          <card :data="card" />
-        </li>
+        <transition-group @enter="updateMeta">
+          <li v-for="card in deck" :key="card.id">
+            <card :data="card" />
+          </li>
+        <transition-group>
       </ul>
     </div>
   </script>
@@ -205,13 +207,13 @@
         board() { return this.$store.getters.board },
         deck() { return this.$store.getters.objectItemsObject(this.board.props.deck) || [] },
       },
-      mounted() {
-        this.cards = [...this.$el.children[0].children]
-        this.cards.forEach(el => {
-          const card = this.$store.getters.object(el.children[0].id)
-          const rect = el.getBoundingClientRect()
-          this.$store.commit("setMeta", { id: card.id, data: { x: rect.left, y: rect.top } })
-        })
+      methods: {
+        updateMeta(el, done) {
+          const { left, top } = el.firstChild.getBoundingClientRect()
+          console.log("Move card to deck", el.firstChild.id)
+          // this.$store.dispatch("animate", { el: el.firstChild, x: left, y: top, r: 180, done })
+          this.$store.commit("setMeta", { id: el.firstChild.id, data: { x: left, y: top } })
+        }
       }
     }
   </script>
@@ -253,7 +255,7 @@
         cardRank() { return this.face.value },
         cardSuit() { return suitCode(this.face.suit) },
       },
-      mounted() { !this.data.pos && this.updateMeta() },
+      mounted() { !this.$store.state.meta[this.data.id] && this.updateMeta() },
       // update card pos when window resized
       created() { window.addEventListener("resize", this.updateMeta) },
       destroyed() { window.removeEventListener("resize", this.updateMeta) },
@@ -415,11 +417,11 @@
         },
         animateSlotEnter(el, done) {
           const { left, top } = el.firstChild.getBoundingClientRect()
-          // this.$store.dispatch("animate", { el: el.firstChild, x: left, y: top, r: 180, done })
+          this.$store.dispatch("animate", { el: el.firstChild, x: left, y: top, r: 180, done })
         },
         animateEnter(el, done) {
           const { left, top } = el.getBoundingClientRect()
-          // this.$store.dispatch("animate", { el, x: left, y: top, r: 180, done })
+          this.$store.dispatch("animate", { el, x: left, y: top, r: 180, done })
         },
       }
     }
@@ -808,6 +810,7 @@
           return Object.values(objects).filter((o) => o.type === "JokerPlayer").sort((a,b) => a.index - b.index)
         },
         playersList: ({}, { me }) => {
+          if (!me) { return [] }
           const result = [0,1,2,3]
           const index = result.indexOf(me.index)
           if (index > 0) {
@@ -843,7 +846,9 @@
         setState(state, snapshot) {
           Object.keys(snapshot).forEach((key) => Vue.set(state, key, snapshot[key]))
         },
-        setMeta: (state, { id, data }) => Vue.set(state.meta, id, data),
+        setMeta: (state, { id, data }) => {
+          Vue.set(state.meta, id, data)
+        },
         setMetaProp: (state, { id, prop, data }) => {
           if (state.meta[id]) {
             Vue.set(state.meta[id], prop, data)
