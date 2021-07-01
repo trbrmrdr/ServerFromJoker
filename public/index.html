@@ -810,8 +810,8 @@
           return Object.values(objects).filter((o) => o.type === "JokerPlayer").sort((a,b) => a.index - b.index)
         },
         playersList: ({}, { me }) => {
-          if (!me) { return [] }
           const result = [0,1,2,3]
+          if (!me) { return result }
           const index = result.indexOf(me.index)
           if (index > 0) {
             result.push(...result.splice(0, index))
