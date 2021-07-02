@@ -79,15 +79,14 @@ export const roundFlow = async (ctx: JokerContext) => {
             player.addAction("setJoker", { suit, higher: true })
             player.addAction("setJoker", { suit, higher: false })
           }
+          player.dialog = "selectFirstCardJoker"
         } else {
-          const suit = isJocker(initiatorCard) ? initiator.player.joker.suit : initiatorCard.face.suit
-          
-          player.addAction("setJoker", { suit: trump, higher: true })
-          player.addAction("setJoker", { suit, higher: false })
+          player.addAction("setJoker", { suit: -1, higher: true })
+          player.addAction("setJoker", { suit: -1, higher: false })
+          player.dialog = "selectJoker"
         }
         const actions = Array.from(player.actions.values())
         const jokerAction = actions[rand(actions.length - 1)]
-        player.dialog = "selectJoker"
         await ctx.waitPlayerAction([{
           player,
           timeout: ctx.options.timer,
@@ -111,7 +110,7 @@ export const roundFlow = async (ctx: JokerContext) => {
       const a = p1.cardSlot.cards[0]
       const b = p2.cardSlot.cards[0]
       if (isJocker(a) && p1.joker.higher) {
-        if (p1.joker.suit === trump) {
+        if (p1.joker.suit === trump || p1.joker.suit === -1) {
           return isJocker(b) && p2.joker.higher
         } else {
           return b.face.suit === trump || isJocker(b) && p2.joker.higher

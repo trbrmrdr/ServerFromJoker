@@ -308,12 +308,12 @@
           <v-chip class="ma-0" dark color="blue" label>{{ player.tricks < 0 ? "" : player.tricks }}</v-chip>
         </div>
         <div class="joker text-center" :class="timerPos" v-if="player.joker.suit >= 0">
-          <v-avatar color="black">
+          <v-avatar color="black" v-if="jokerSuit >= 0">
             <v-icon dark>
               {{ jokerSuit }}
             </v-icon>
           </v-avatar>
-          <v-chip class="ma-0" dark color="orange" label>{{ player.joker.higher ? "высшие" : "пусть берут" }}</v-chip>
+          <v-chip class="ma-0" dark color="orange" label>{{ jokerLable }}</v-chip>
         </div>
         <div v-if="timer >= 1" class="timer" :class="timerPos">
           <v-progress-circular
@@ -387,7 +387,14 @@
         },
         jokerSuit() {
           return ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"][this.player.joker.suit]
-        }
+        },
+        jokerLable() {
+          if (this.jokerSuit >= 0) {
+            return this.player.joker.higher ? "высшие" : "пусть берут"
+          } else {
+            return this.player.joker.higher ? "Джокер сверзу" : "Джокер снизу"
+          }
+        },
       },
       watch: {
         timer(value) {
@@ -491,7 +498,7 @@
   </script>
 
   <script type="text/x-template" id="select-joker-dialog">
-    <v-dialog v-model="dialog" persistent width="320">
+    <v-dialog v-model="showDialog" persistent width="320">
       <v-card flat class="py-12">
         <v-card-text>
           <v-row align="center" justify="center">
@@ -500,20 +507,22 @@
                 Выберите как играть джокером
               </p>
             </v-col>
-            <p class="text-center">
+            <p class="text-center" v-if="firstCard">
               Пусть берут
             </p>
             <v-btn-toggle>
               <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
-                <v-icon>{{ action.icon }}</v-icon>
+                <v-icon v-if="action.icon" >{{ action.icon }}</v-icon>
+                <span v-else>Джокер младшая карта </span>
               </v-btn>
             </v-btn-toggle>
-            <p class="text-center">
+            <p class="text-center" v-if="firstCard">
               Высшие 
             </p>
             <v-btn-toggle>
               <v-btn v-for="action of actions" :key="action.id" v-if="action.higher" @click="execAction(action.id)">
-                <v-icon>{{ action.icon }}</v-icon>
+                <v-icon v-if="action.icon">{{ action.icon }}</v-icon>
+                <span v-else>Джокер старшая карта </span>
               </v-btn>
             </v-btn-toggle>
           </v-row>
@@ -525,14 +534,15 @@
     const SelectJoker = {
       template: "#select-joker-dialog",
       computed: {
-        ...Vuex.mapGetters([ "me" ]),
+        ...Vuex.mapGetters([ "me", "dialog" ]),
         actions() {
           const actions = this.me && Object.values(this.me.actions || {}) || []
           const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"]
           return actions.filter(({ name }) => name === "setJoker").map(({ id, data }) => ({ id: id, higher: data.higher, icon: icons[data.suit] }))
         },
-        dialog: {
-          get() { return this.$store.getters.dialog("selectJoker") },
+        firstCard() { return this.dialog("selectFirstCardJoker") },
+        showDialog: {
+          get() { return this.dialog("selectJoker") || this.dialog("selectFirstCardJoker") },
           set(value) {  }
         },
       },
