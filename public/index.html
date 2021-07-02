@@ -631,7 +631,7 @@
       computed: {
         ...Vuex.mapGetters([ "players", "board", "me", "objectProp" ]),
         trumpIcon() { 
-          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond", "mdi-xamarin-outline"]
+          const icons = ["mdi-cards-spade", "mdi-cards-club", "mdi-cards-heart", "mdi-cards-diamond", "mdi-xamarin-outline"]
           const trump = this.objectProp(this.board, "trump")
           return icons[trump.suit] 
         }
