@@ -105,6 +105,11 @@ export class Trump extends GameItem {
   @mx.number public suit: number = -1
 }
 
+export class LastCard extends Mosx {
+  @mx public suit: number = -1
+  @mx public value: string = ""
+}
+
 export class JokerOptions extends Mosx {
   @mx public bet: number = 100
   @mx public autoturn: boolean = true
@@ -127,6 +132,7 @@ export class JokerBoard extends GameItem {
   @mx public scene!: string
   @mx public score!: number[]
   @mx public round!: number
+  @mx public lastTrick!: LastCard[]
   public deck!: Cards
 
   public trumpSlot!: Cards
@@ -137,6 +143,7 @@ export class JokerBoard extends GameItem {
     this.scene = "waitPlayers"
     this.round = 0
     this.score = []
+    this.lastTrick = [0,0,0,0].map(() => new LastCard(this))
 
     this.deck = this.addProp(Cards, "deck", { cardsSide: Face.down })
     this.trumpSlot = this.addProp(Cards, "trumpSlot",  { cardsSide: Face.up })

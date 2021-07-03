@@ -8,6 +8,7 @@ const endTurnDelay = 3
 export const roundFlow = async (ctx: JokerContext) => {
   ctx.state.board.scene = "gameRound"
   const { active, initiator } = ctx.roles
+  const { lastTrick } = ctx.state.board
 
   debuglog(ctx, ctx.roles.active.player, `>> init game`)
 
@@ -53,12 +54,10 @@ export const roundFlow = async (ctx: JokerContext) => {
       if (initiator.player !== player) {
         cards = player.hand.cards.filter((card) => !isJocker(card) && card.face.suit === initiatorCard.face.suit)
         if (!cards.length) {
-          cards = player.hand.cards.filter((card) => isJocker(card) || card.face.suit === trump)
-        } else {
-          cards = [...cards, ...player.hand.cards.filter(isJocker)]
+          cards = player.hand.cards.filter((card) => card.face.suit === trump)
         }
       }
-      cards = cards.length ? cards : player.hand.cards
+      cards = cards.length ? [...cards, ...player.hand.cards.filter(isJocker)] : player.hand.cards
 
       cards.forEach((c) => player.addAction("move", { objectId: c.id, destId: player.cardSlot.id }))
       const actions = Array.from(player.actions.values())
@@ -81,8 +80,8 @@ export const roundFlow = async (ctx: JokerContext) => {
           }
           player.dialog = "selectFirstCardJoker"
         } else {
-          player.addAction("setJoker", { suit: -1, higher: true })
-          player.addAction("setJoker", { suit: -1, higher: false })
+          player.addAction("setJoker", { suit: 4, higher: true })
+          player.addAction("setJoker", { suit: 4, higher: false })
           player.dialog = "selectJoker"
         }
         const actions = Array.from(player.actions.values())
@@ -110,7 +109,7 @@ export const roundFlow = async (ctx: JokerContext) => {
       const a = p1.cardSlot.cards[0]
       const b = p2.cardSlot.cards[0]
       if (isJocker(a) && p1.joker.higher) {
-        if (p1.joker.suit === trump || p1.joker.suit === -1) {
+        if (p1.joker.suit === trump || p1.joker.suit === 4) {
           return isJocker(b) && p2.joker.higher
         } else {
           return b.face.suit === trump || isJocker(b) && p2.joker.higher
@@ -145,7 +144,12 @@ export const roundFlow = async (ctx: JokerContext) => {
 
     await ctx.delay(endTurnDelay)
 
+    // move all cards from board
     ctx.roles.active.forEach((p) => {
+      // save last trick
+      lastTrick[p.index].suit = p.cardSlot.cards[0].face.suit
+      lastTrick[p.index].value = p.cardSlot.cards[0].face.value
+
       p.joker.suit = -1
       p.cardSlot.moveAll(winner.trash)
     })

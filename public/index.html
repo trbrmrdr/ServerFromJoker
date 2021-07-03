@@ -389,10 +389,10 @@
           return ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"][this.player.joker.suit]
         },
         jokerLable() {
-          if (this.jokerSuit >= 0) {
-            return this.player.joker.higher ? "высшие" : "пусть берут"
-          } else {
+          if (this.jokerSuit >= 4) {
             return this.player.joker.higher ? "Джокер сверзу" : "Джокер снизу"
+          } else {
+            return this.player.joker.higher ? "высшие" : "пусть берут"
           }
         },
       },
@@ -450,6 +450,60 @@
           get() { return this.$store.state.loading },
           set(value) { this.$store.commit("setLoading", value) }
         }
+      }
+    }
+  </script>
+
+  <script type="text/x-template" id="last-trick-dialog">
+    <v-dialog v-model="dialog" width="320">
+      <v-card flat class="py-12 d-flex justify-center">
+        <v-card-text>
+          <v-row >
+            <v-col cols="12" align="center" justify="center" >
+              <div class="card">
+                <span class="rank">{{ cardRank(2) }}</span>
+                <span class="suit">{{ cardSuit(2) }}</span>
+              </div>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6" align="center" justify="center" >
+              <div class="card">
+                <span class="rank">{{ cardRank(1) }}</span>
+                <span class="suit">{{ cardSuit(1) }}</span>
+              </div>
+            </v-col>
+            <v-col cols="6" align="center" justify="center" >
+              <div class="card">
+                <span class="rank">{{ cardRank(3) }}</span>
+                <span class="suit">{{ cardSuit(3) }}</span>
+              </div>
+            </v-col>
+          </v-row>
+          <v-row   >
+            <v-col cols="12" align="center" justify="center" >
+              <div class="card">
+                <span class="rank">{{ cardRank(0) }}</span>
+                <span class="suit">{{ cardSuit(0) }}</span>
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </script>
+  <script id="last-trick-dialog">
+    const LastTrickDialog = {
+      template: "#last-trick-dialog",
+      computed: {
+        ...Vuex.mapGetters([ "board", "playersList" ]),
+        lastTrick() { return (i) => this.board && this.board.lastTrick[this.playersList[i]] || {} },
+        cardRank() { return (i) => this.lastTrick(i).value },
+        cardSuit() { return (i) => suitCode(this.lastTrick(i).suit) },
+        dialog: {
+          get() { return this.$store.state.lastTrickDialog },
+          set(value) { this.$store.commit("setLastTrickDialog", value) }
+        },
       }
     }
   </script>
@@ -603,9 +657,6 @@
 
   <script type="text/x-template" id="game-layout"> 
     <div id="game-container">   
-      <v-btn v-if="players.lendth < 4" class="mx-2" dark small color="green" @click="addBot()">
-        <v-icon>mdi-plus</v-icon>
-      </v-btn>
       <div id="game-table" class="playingCards faceImages">
         <div class="game-board" v-if="board && board.scene !== 'init'">
           <deck class="game-deck"></deck>
@@ -622,10 +673,14 @@
         <player-board pos=1></player-board>
         <player-board pos=2></player-board>
         <player-board pos=3></player-board>
+        <div id="lastTrick" class="left bottom" style="position: absolute" v-if="lastTrick.length">
+          <v-btn rounded color="blue" dark @click="showLastTrick()">Последняя взятка</v-btn>
+        </div>
         <select-trump-dialog />
         <select-bid-dialog />
         <select-joker-dialog />
         <game-score />
+        <last-trick-dialog />
       </div>
     </div>
   </script>
@@ -644,7 +699,8 @@
           const icons = ["mdi-cards-spade", "mdi-cards-club", "mdi-cards-heart", "mdi-cards-diamond", "mdi-xamarin-outline"]
           const trump = this.objectProp(this.board, "trump")
           return icons[trump.suit] 
-        }
+        },
+        lastTrick() { return this.board && this.board.lastTrick.filter(({ suit }) => suit >= 0) || [] },
       },
       watch: {
         id(val) {
@@ -652,7 +708,9 @@
         }
       },
       methods: {
-        addBot() { this.$store.dispatch("addBot") },
+        showLastTrick() {
+          this.$store.commit("setLastTrickDialog", true)
+        },
         resize() {
           // get parent element size
           const { clientWidth: width, clientHeight: height } = this.$el
@@ -941,6 +999,7 @@
         send: null,
         leave: null,
         rooms: [],
+        lastTrickDialog: false,
       },
       getters: {
         dialog: ({ dialog }, { me }) => (name) => me && me.dialog === name || false,
@@ -987,6 +1046,7 @@
         },
         setRooms(state, rooms) { state.rooms = rooms },
         setDialog(state, { name, value }) { state.dialog = { name: value } },
+        setLastTrickDialog(state, value) { state.lastTrickDialog = value },
         updateRoom(state, { roomId, data }) {
           const index = state.rooms.findIndex((room) => room.id === roomId)
           if (data === null) {
@@ -1226,6 +1286,7 @@
     Vue.component('select-trump-dialog', SelectTrump)
     Vue.component('select-joker-dialog', SelectJoker)
     Vue.component('select-bid-dialog', SelectBid)
+    Vue.component('last-trick-dialog', LastTrickDialog)
     Vue.component('game-score', GameScore)
 
     new Vue({

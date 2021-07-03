@@ -5,20 +5,21 @@ import { JokerContext } from "../types"
 const dealDelay = 0.2
 
 export const initRound = async (ctx: JokerContext) => {
+  const { deck, round, trump, trumpSlot, lastTrick } = ctx.state.board
   // clear players status and timer
   ctx.players.forEach((player) => {
     player.tricks = 0
     player.bid = -1
     player.jokerTrump = true
+    lastTrick[player.index].suit = -1
+    lastTrick[player.index].value = ""
   })
-
-  const { deck, round, trump, trumpSlot } = ctx.state.board
 
   trump.suit = -1
 
   // move all cards to deck
   ctx.state.objects.forEach((obj) => {
-    if (obj.type === "Card" && obj.owner !== deck) {
+    if (obj.type === "Card" && obj.owner !== deck && obj.owner !== ctx.state.board) {
       const container = obj.owner as Container
       container.move(obj.id, deck)
     }
