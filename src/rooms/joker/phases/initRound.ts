@@ -5,7 +5,7 @@ import { JokerContext } from "../types"
 const dealDelay = 0.2
 
 export const initRound = async (ctx: JokerContext) => {
-  const { deck, round, trump, trumpSlot, lastTrick } = ctx.state.board
+  const { deck, round, bullet, trump, trumpSlot, lastTrick } = ctx.state.board
   // clear players status and timer
   ctx.players.forEach((player) => {
     player.tricks = 0
@@ -29,7 +29,7 @@ export const initRound = async (ctx: JokerContext) => {
   debuglog(ctx, ctx.roles.active.player, `>> shuffle cards`)
   deck.shuffle()
 
-  const roundCards = (round - 1) % 12 > 7 ? 9 : (round > 8) ? Math.abs(round - 21) : round
+  const roundCards = bullet % 2 ? (bullet > 1 ? 9 - round : round) : 9
 
   const { player: dealer } = ctx.roles.dealer
   ctx.roles.active.player = ctx.roles.dealer.next

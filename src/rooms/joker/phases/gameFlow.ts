@@ -10,19 +10,24 @@ export const gameFlow = async (ctx: JokerContext) => {
   
   // init game phase
   await ctx.next("initGame")
-  
   // game cycle
-  while (ctx.data.phase !== "endGame" && board.round <= 24) {
-    board.scene = "gameRound"
-    debuglog(ctx, ctx.roles.active.player, `>> game round`)
-    
-    await ctx.next("roundFlow")
-    
-    if (ctx.data.phase === "endGame") { continue }
-
-    board.scene = "gameScore"
-    debuglog(ctx, ctx.roles.active.player, `>> end round`)
-    await ctx.delay(endRoundDelay)
+  for (let bullet = 0; bullet < 4; bullet ++) {
+    board.bullet = bullet + 1
+    const rounds = bullet % 2 ? 4 : 8
+    for (let round = 0; round < rounds; round ++) {
+      if (ctx.data.phase === "endGame") { continue }
+      board.round = round + 1
+      board.scene = "gameRound"
+      debuglog(ctx, ctx.roles.active.player, `>> game round`)
+      
+      await ctx.next("roundFlow")
+      
+      if (ctx.data.phase === "endGame") { continue }
+  
+      board.scene = "gameScore"
+      debuglog(ctx, ctx.roles.active.player, `>> end round`)
+      await ctx.delay(endRoundDelay)  
+    }    
   }
   board.scene = "endGame"
   debuglog(ctx, ctx.roles.active.player, `>> end game`)

@@ -131,6 +131,7 @@ export class JokerBoard extends GameItem {
   @mx public options!: JokerOptions
   @mx public scene!: string
   @mx public score!: number[]
+  @mx public bullet!: number
   @mx public round!: number
   @mx public lastTrick!: LastCard[]
   public deck!: Cards
@@ -142,7 +143,8 @@ export class JokerBoard extends GameItem {
     this.options = new JokerOptions(this, options)
     this.scene = "waitPlayers"
     this.round = 0
-    this.score = []
+    this.bullet = 0
+    this.score = new Array(28 * 4 * 3)
     this.lastTrick = [0,0,0,0].map(() => new LastCard(this))
 
     this.deck = this.addProp(Cards, "deck", { cardsSide: Face.down })

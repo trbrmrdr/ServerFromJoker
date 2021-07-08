@@ -26,8 +26,6 @@ export const endGame = async (ctx: JokerContext) => {
       if (!player) { continue }
       player.timer.stop()
     }
-    // unlock room
-    ctx.emit("unlock")
 
   } else {
     return ctx.next("startGame")

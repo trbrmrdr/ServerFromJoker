@@ -40,6 +40,12 @@ export const initGame = async (ctx: JokerContext) => {
       // set dealer
       ctx.roles.dealer.player = active
       ctx.roles.active.moveNext()
+
+      // update players index
+      for (let i = 0; i < 4; i ++) {
+        ctx.roles.active.player.index = i
+        ctx.roles.active.moveNext()
+      }
       
       debuglog(ctx, active, `>> player: ${active.clientId} is dealer`)
       break
@@ -47,8 +53,6 @@ export const initGame = async (ctx: JokerContext) => {
     ctx.roles.active.moveNext()
     await ctx.delay(dealDelay)
   }
-
-  ctx.state.board.round = 1
 
   await ctx.delay(initGameDelay)
 }

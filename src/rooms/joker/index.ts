@@ -29,7 +29,7 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
 
   public async onCreate(params: any) {
     // create context
-    const engine = { phases, actions, roles: ["active", "dealer", "initiator"] }
+    const engine = { phases, actions, roles: ["active", "dealer", "initiator", "first"] }
     const state = new GameState(JokerBoard, params.options)
 
     this.context = new GameContext(engine, state, this.id)
@@ -51,14 +51,6 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
       if (this.clients.size) {
         this.updateCache()
       }
-    })
-
-    this.context.on("lock", () => {
-      !this.locked && this.lock()
-    })
-
-    this.context.on("unlock", () => {
-      this.locked && this.unlock()
     })
 
     this.context.on("log", (data: any) => {
@@ -165,7 +157,7 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
     }
 
     await onLeave(this.context, jokerClient.player)
-    this.leaveRoom
+
     this.state.removeClient(client.id)
     this.state.objects.delete(jokerClient.playerId)
   }
@@ -225,8 +217,6 @@ export class JokerRoom extends Room<GameState<JokerBoard, JokerClient>> {
     
     // if all players took place start game
     if (players === 4) {
-      this.context.emit("lock")
-
       return this.context.next("gameFlow")
     }
 

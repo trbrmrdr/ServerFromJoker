@@ -141,8 +141,6 @@ export const onLeave = async (ctx: JokerContext, player: JokerPlayer) => {
       // add place action
       addPlaceAction(ctx, player, player.index)
     }
-    // unlock room
-    ctx.emit("unlock")
     ctx.state.objects.delete(player.id)
 
     // clear players list
