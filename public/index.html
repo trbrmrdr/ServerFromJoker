@@ -574,21 +574,22 @@
               </p>
             </v-col>
             <p class="text-center" v-if="firstCard">
-              Пусть берут
-            </p>
-            <v-btn-toggle>
-              <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
-                <v-icon v-if="action.icon" >{{ action.icon }}</v-icon>
-                <span v-else>Джокер младшая карта </span>
-              </v-btn>
-            </v-btn-toggle>
-            <p class="text-center" v-if="firstCard">
               Высшие 
             </p>
             <v-btn-toggle>
               <v-btn v-for="action of actions" :key="action.id" v-if="action.higher" @click="execAction(action.id)">
                 <v-icon v-if="action.icon">{{ action.icon }}</v-icon>
                 <span v-else>Джокер старшая карта </span>
+              </v-btn>
+            </v-btn-toggle>
+            <br>
+            <p class="text-center" v-if="firstCard">
+              Пусть берут
+            </p>
+            <v-btn-toggle>
+              <v-btn v-for="action of actions" :key="action.id" v-if="!action.higher" @click="execAction(action.id)">
+                <v-icon v-if="action.icon" >{{ action.icon }}</v-icon>
+                <span v-else>Джокер младшая карта </span>
               </v-btn>
             </v-btn-toggle>
           </v-row>
@@ -603,7 +604,7 @@
         ...Vuex.mapGetters([ "me", "dialog" ]),
         actions() {
           const actions = this.me && Object.values(this.me.actions || {}) || []
-          const icons = ["mdi-cards-spade", "mdi-cards-heart", "mdi-cards-club", "mdi-cards-diamond"]
+          const icons = ["mdi-cards-spade", "mdi-cards-club", "mdi-cards-heart", "mdi-cards-diamond"]
           return actions.filter(({ name }) => name === "setJoker").map(({ id, data }) => ({ id: id, higher: data.higher, icon: icons[data.suit] }))
         },
         firstCard() { return this.dialog("selectFirstCardJoker") },
@@ -936,7 +937,8 @@
         if (!this.board) { return "" }
 
         const calcScore = (r, p) => {
-          return this.board.score[r*12+p*3 + 2] || "."
+          const score = this.board.score[r*12+p*3 + 2]
+          return score === undefined ? "." : score
         }
 
         const calcTotal = (r0, r1, p) => {
@@ -950,11 +952,11 @@
         }
 
         switch (index) {
-          case 9: return calcTotal(0, 7, player-1)
-          case 14: return calcTotal(8, 11, player-1)
-          case 23: return calcTotal(12, 19, player-1)
-          case 28: return calcTotal(20, 23, player-1)
-          case 29: return calcTotal(0, 23, player-1)
+          case 9: return calcTotal(0, 8, player-1)
+          case 14: return calcTotal(9, 13, player-1)
+          case 23: return calcTotal(14, 22, player-1)
+          case 28: return calcTotal(23, 28, player-1)
+          case 29: return calcTotal(0, 29, player-1)
         
           default:
             // const round = index - this.shift(index)

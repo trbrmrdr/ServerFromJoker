@@ -36,38 +36,14 @@ export const roundFlow = async (ctx: JokerContext) => {
   const { active, initiator } = ctx.roles
   const { board } = ctx.state
 
-  debuglog(ctx, ctx.roles.active.player, `>> init game`)
+  debuglog(ctx, ctx.roles.active.player, `>> init round`)
 
-  // init game phase
+  // init round phase
   await ctx.next("initRound")
 
-  let totalBid = 0
-  for (let i = 0; i < 4; i++) {
-    const { player } = active
-    let defAction = null
-    for (let j = 0; j <= player.hand.cards.length; j++) {
-
-      if (i === 3 && totalBid + j === player.hand.cards.length) { continue }
-
-      const action = player.addAction("setBid", j)
-      if (!defAction) {
-        defAction = action
-      }
-    }
-    player.dialog = "selectBid"
-
-    await ctx.waitPlayerAction([{
-      player,
-      timeout: ctx.options.timer,
-      timeoutActionId: defAction!.id
-    }])
-
-    totalBid += player.bid
-
-    ctx.roles.active.moveNext()
-  }
-
-  initiator.player = active.player
+  // select bid
+  await ctx.next("selectBid")
+  
   const steps = initiator.player.hand.cards.length
   const trump = ctx.state.board.trump.suit
 
@@ -76,6 +52,7 @@ export const roundFlow = async (ctx: JokerContext) => {
       const { player } = active
       const initiatorCard = initiator.player.cardSlot.cards[0]
 
+      // init player actions
       let cards: Card[] = []
       if (initiator.player !== player) {
         if (isJocker(initiatorCard)) {
@@ -108,6 +85,7 @@ export const roundFlow = async (ctx: JokerContext) => {
 
       const playerCard = player.cardSlot.cards[0]
 
+      // select joker params
       if (isJocker(playerCard)) {
         if (player === initiator.player) {
           for (let suit = 0; suit < 4; suit ++) {
@@ -165,46 +143,8 @@ export const roundFlow = async (ctx: JokerContext) => {
     })
   }
 
-  const calcScore = (cards: number, bid: number, tricks: number) => {
-    if (bid === tricks) {
-      if (tricks === 9) { return 900 }
-      if (tricks === cards) { return tricks * 100 }
-      return 50 + 50 * tricks
-    } else {
-      if (tricks === 0) { return -200 }
-      return 10 * tricks
-    }
-  }
-
-  // save round score
-  ctx.players.forEach((p) => {
-    const cards = board.bullet % 2 ? (board.bullet > 1 ? 9 - board.round : board.round) : 9
-    const scoreLine = 5 * (board.bullet - 1) + (!(board.bullet % 2) ? 4 : 0) + board.round - 1
-    const i = scoreLine * 12 + p.index * 3
-    board.score[i] = p.bid
-    board.score[i+1] = p.tricks
-    board.score[i+2] = calcScore(cards, p.bid, p.tricks)
-  })
-
-  // // calculate bonus
-  // if (board.round === (board.bullet % 2 ? 4 : 8)) {
-  //   const bonusPlayers = [true, true, true, true]
-  //   const scoreLine = 5 * board.bullet + (!(board.bullet % 2) ? 4 : 0) + board.round - 1
-  //   for (let round = 1; round <= board.round; round++) {
-  //     for (let p = 0; p < 4; p++ ) {
-  //       if (!bonusPlayers[p]) { continue }
-  //       const i = scoreLine * 12 + p * 3
-  //       bonusPlayers[p] = board.score[i] === board.score[i+1]
-  //     }
-  //   }
-  //   const bonusPlayer = bonusPlayers.indexOf(true)
-
-  //   // add bonus
-  //   if (bonusPlayer >= 0) {
-      
-  //   }
-
-  // }
+  // end round phase
+  await ctx.next("endRound")
 
   ctx.roles.dealer.moveNext()
 }

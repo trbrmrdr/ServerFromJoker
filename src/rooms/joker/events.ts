@@ -1,5 +1,5 @@
 import { JokerContext, JokerPlayer, IJokerOptions, JokerClient } from "./types"
-import { addPlaceAction, debuglog } from "./common"
+import { debuglog } from "./common"
 
 export const onJoinRoom = async (ctx: JokerContext, client: JokerClient, options: IJokerOptions) => {
 
@@ -101,12 +101,7 @@ export const onSurrender = async (ctx: JokerContext, player: JokerPlayer) => {
   console.log(`player surrendered`)
 
   // check if player is in game
-  const index = ctx.players.indexOf(player)
-  if (ctx.state.board.scene === "game" && index >= 0 && ctx.players.notInGroup("win").includes(player)) {
-    // end game
-    return ctx.next("gameOver", player)
-  } else {
-    // drop player from room
+  if (ctx.state.board.scene === "waitPlayers") {
     ctx.emit("player_dropped", player)
   }
 }
@@ -120,35 +115,9 @@ export const onLeave = async (ctx: JokerContext, player: JokerPlayer) => {
   console.log(`player leaved`)
 
   // check if real players
-  if (player.userRef) {
-    // TODO return money
-  }
+  // if (player.userRef) {
+  //   // TODO return money
+  // }
 
   // check if player in game
-  const index = ctx.players.indexOf(player)
-  if (ctx.state.board.scene === "game" && index >= 0 && ctx.players.notInGroup("win").includes(player)) {
-    // end game
-    await ctx.next("gameOver", player)
-  }
-
-  // reset all players if count down started
-  if (ctx.state.board.scene === "init") {
-    for (const { player } of ctx.state.clients.values()) {
-      if (!player) { continue }
-      player.timer.stop()
-      player.removeActions()
-
-      // add place action
-      addPlaceAction(ctx, player, player.index)
-    }
-    ctx.state.objects.delete(player.id)
-
-    // clear players list
-    return ctx.players.clear()
-  }
-
-  // remove player from list
-  if (index >= 0) {
-    ctx.players.splice(index, 1)
-  }
 }

@@ -42,7 +42,7 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify): Promise<void> => {
     // schedule agenda jobs
   })
 
-  fastify.magx =  new Server(fastify.server, {
+  fastify.magx = new Server(fastify.server, {
     // auth: {
     //   verify: (token) => true,
     //   sign: (id) => id
