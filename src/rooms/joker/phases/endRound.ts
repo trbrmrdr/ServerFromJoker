@@ -12,7 +12,7 @@ const calcScore = (cards: number, bid: number, tricks: number) => {
 }
 
 const scorePos = (bullet: number, round: number, player: number) => {
-  const shift = [0, 9, 14, 22]
+  const shift = [0, 9, 14, 23]
   return (shift[bullet - 1] + round - 1) * 12 + player * 3
 }
 

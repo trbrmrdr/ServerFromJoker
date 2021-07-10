@@ -89,7 +89,6 @@ export const roundFlow = async (ctx: JokerContext) => {
       if (isJocker(playerCard)) {
         if (player === initiator.player) {
           for (let suit = 0; suit < 4; suit ++) {
-            if (suit === trump && !player.jokerTrump) { continue }
             player.addAction("setJoker", { suit, higher: true })
             player.addAction("setJoker", { suit, higher: false })
           }
