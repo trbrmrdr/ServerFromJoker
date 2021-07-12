@@ -144,7 +144,7 @@ export class JokerBoard extends GameItem {
     this.scene = "waitPlayers"
     this.round = 0
     this.bullet = 0
-    this.score = new Array(28 * 4 * 3)
+    this.score = new Array(24 * 4 * 3)
     this.lastTrick = [0,0,0,0].map(() => new LastCard(this))
 
     this.deck = this.addProp(Cards, "deck", { cardsSide: Face.down })

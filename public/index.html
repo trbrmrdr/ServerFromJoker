@@ -897,6 +897,13 @@
         get() { return (this.board && this.board.scene === "gameScore") || this.$store.state.showScore },
         set(value) { this.$store.commit("showScore", value)  }
       },
+      scroreRows() {
+        const rows = []
+        for (let i = 0; i < this.board.score.length; i += 12) {
+          rows.push(this.board.score.slice(i, i+12))
+        }
+        return rows
+      }
     },
     methods: {
       playerName(p) {
@@ -945,22 +952,20 @@
           if (calcScore(r1, p) === ".") { return "." }
           let total = 0
           for (let r = r0; r <= r1; r++) {
-            const score = calcScore(r, p)
-            total += score
+            total += calcScore(r, p) || 0
           }
           return total
         }
 
         switch (index) {
-          case 9: return calcTotal(0, 8, player-1)
-          case 14: return calcTotal(9, 13, player-1)
-          case 23: return calcTotal(14, 22, player-1)
-          case 28: return calcTotal(23, 27, player-1)
-          case 29: return calcTotal(0, 28, player-1)
+          case 9: return calcTotal(0, 7, player-1)
+          case 14: return calcTotal(8, 11, player-1)
+          case 23: return calcTotal(12, 19, player-1)
+          case 28: return calcTotal(20, 23, player-1)
+          case 29: return calcTotal(0, 23, player-1)
         
           default:
-            // const round = index - this.shift(index)
-            return calcScore(index - 1, player - 1)
+            return calcScore(index - this.shift(index) - 1, player - 1)
         }        
       }
     }

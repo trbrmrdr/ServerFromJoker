@@ -12,7 +12,7 @@ const calcScore = (cards: number, bid: number, tricks: number) => {
 }
 
 const scorePos = (bullet: number, round: number, player: number) => {
-  const shift = [0, 9, 14, 23]
+  const shift = [0, 8, 12, 20]
   return (shift[bullet - 1] + round - 1) * 12 + player * 3
 }
 
@@ -25,7 +25,7 @@ const maxPlayerScore = (scoreData: number[], bullet: number, p: number, win = fa
   const rounds = bullet % 2 ? 8 : 4
 
   let result = 0
-  for (let r = 1; r <= rounds - (win ? 0 : 1); r++) {
+  for (let r = 1; r <= rounds - 1; r++) {
     const score = playerScore(scoreData, bullet, r, p)
     if (win || !(score[0] === score[1] && score[0] === 0)) {
       result = Math.max(result, score[2])
@@ -46,13 +46,11 @@ const maxPlayerScore = (scoreData: number[], bullet: number, p: number, win = fa
 //     0, 0, 50,  0, 0, 50,  3, 3, 200,  3, 2, 20, // 6
 //     2, 2, 150, 1, 1, 100, 2, 2, 150,  1, 1, 100, // 7
 //     1, 1, 100, 2, 2, 150,  1, 1, 100,  2, 1, 10, // 8
-//     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 //     1, 1, 100, 2, 2, 150, 0, 0, 50,   3, 1, 10,  // 4
 //     1, 1, 100, 2, 2, 150, 0, 0, 50,   3, 1, 10, // 5
 //     0, 0, 50,  0, 0, 50,  3, 3, 200,  3, 2, 20, // 6
 //     2, 2, 150, 1, 1, 100, 2, 2, 150,  1, 1, 100, // 7
 //     1, 1, 100, 2, 3, 30,  1, 1, 100,  2, 1, 10, // 8
-//     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 //     0, 0, 50,  1, 1, 100, 1, 0, -200, 0, 0, 50, // 1
 //     1, 1, 100, 1, 1, 100, 1, 0, -200, 0, 0, 50, // 2
 //     0, 0, 50,  0, 1, 10,  1, 1, 100,  1, 1, 100, // 3
@@ -61,13 +59,11 @@ const maxPlayerScore = (scoreData: number[], bullet: number, p: number, win = fa
 //     0, 0, 50,  0, 0, 50,  3, 3, 200,  3, 2, 20, // 6
 //     2, 2, 150, 1, 1, 100, 2, 2, 150,  1, 1, 100, // 7
 //     1, 1, 100, 2, 3, 30,  1, 1, 100,  2, 1, 10, // 8
-//     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 //     1, 1, 100, 2, 2, 150, 0, 0, 50,   3, 1, 10,  // 4
 //     1, 1, 100, 2, 2, 150, 0, 0, 50,   3, 1, 10, // 5
 //     0, 0, 50,  0, 0, 50,  3, 3, 200,  3, 2, 20, // 6
 //     2, 2, 150, 1, 1, 100, 2, 2, 150,  1, 1, 100, // 7
 //     1, 1, 100, 2, 3, 30,  1, 1, 100,  2, 1, 10, // 8
-//     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 //   ]
 // }
 
@@ -103,17 +99,15 @@ export const endRound = async (ctx: JokerContext) => {
 
     // add bonus
     if (bonusPlayerIndex >= 0) {
-     
       active.player = ctx.players.find((p) => p.index === 0)!
       for (let p = 0; p < 4; p++) {
-        const i = scorePos(board.bullet, board.round + 1, p)
+        const i = scorePos(board.bullet, board.round, p)
+
         if (p === bonusPlayerIndex) {
-          board.score[i+2] = maxPlayerScore(board.score, board.bullet, p, true)
+          board.score[i+2] += maxPlayerScore(board.score, board.bullet, p, true)
         } else if (!bonusPlayers[p]) {
-          board.score[i+2] = -maxPlayerScore(board.score, board.bullet, p)
-        } else {
-          board.score[i+2] = 0
-        }
+          board.score[i+2] -= maxPlayerScore(board.score, board.bullet, p)
+        } 
         active.moveNext()
       }
     }

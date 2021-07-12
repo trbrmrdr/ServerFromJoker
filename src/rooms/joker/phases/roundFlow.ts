@@ -12,11 +12,15 @@ const higherValue = (a: Card, b: Card) => {
 const higherCard = (p1: JokerPlayer, p2: JokerPlayer, trump: number): boolean => {
   const a = p1.cardSlot.cards[0]
   const b = p2.cardSlot.cards[0]
-  if (isJocker(a) && p1.joker.higher) {
-    if (p1.joker.suit === trump || p1.joker.suit === 4) {
-      return isJocker(b) && p2.joker.higher
+  if (isJocker(a)) {
+    if (p1.joker.higher) {
+      if (p1.joker.suit === trump || p1.joker.suit === 4) {
+        return isJocker(b) && p2.joker.higher
+      } else {
+        return b.face.suit === trump || isJocker(b) && p2.joker.higher
+      }
     } else {
-      return b.face.suit === trump || isJocker(b) && p2.joker.higher
+      return !(isJocker(b) && !p2.joker.higher || p1.joker.suit !== b.face.suit)
     }
   }
   if (isJocker(b)) {
