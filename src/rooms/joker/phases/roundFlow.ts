@@ -37,10 +37,10 @@ const higherCard = (p1: JokerPlayer, p2: JokerPlayer, trump: number): boolean =>
 
 export const roundFlow = async (ctx: JokerContext) => {
   ctx.state.board.scene = "gameRound"
-  const { active, initiator } = ctx.roles
+  const { active, initiator, dealer } = ctx.roles
   const { board } = ctx.state
 
-  debuglog(ctx, ctx.roles.active.player, `>> init round`)
+  debuglog(ctx, active.player, `>> init round`)
 
   // init round phase
   await ctx.next("initRound")
@@ -49,7 +49,7 @@ export const roundFlow = async (ctx: JokerContext) => {
   await ctx.next("selectBid")
   
   const steps = initiator.player.hand.cards.length
-  const trump = ctx.state.board.trump.suit
+  const trump = board.trump.suit
 
   for (let step = 0; step < steps; step++) {
     for (let p = 0; p < 4; p++) {
@@ -115,14 +115,14 @@ export const roundFlow = async (ctx: JokerContext) => {
         player.jokerTrump = false
       }
 
-      ctx.roles.active.moveNext()
+      active.moveNext()
     }
 
     // find winner
     let winner = initiator.player
     active.player = initiator.next
     for (let p = 1; p < 4; p++) {
-      if (higherCard(winner, active.player, ctx.state.board.trump.suit)) {
+      if (higherCard(winner, active.player, board.trump.suit)) {
         winner = active.player
       }
       active.moveNext()
@@ -136,7 +136,7 @@ export const roundFlow = async (ctx: JokerContext) => {
     await ctx.delay(endTurnDelay)
 
     // move all cards from board
-    ctx.roles.active.forEach((p) => {
+    active.forEach((p) => {
       // save last trick
       board.lastTrick[p.index].suit = p.cardSlot.cards[0].face.suit
       board.lastTrick[p.index].value = p.cardSlot.cards[0].face.value
@@ -149,5 +149,5 @@ export const roundFlow = async (ctx: JokerContext) => {
   // end round phase
   await ctx.next("endRound")
 
-  ctx.roles.dealer.moveNext()
+  dealer.moveNext()
 }

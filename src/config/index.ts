@@ -11,10 +11,10 @@ export const config = {
   // agenda 
   // mongodb
   mongoUrl: $("MONGO_URL"),
-  mongoTestUrl: $("MONGO_TEST_URL"),
+  // mongoTestUrl: $("MONGO_TEST_URL"),
 
   // redis
-  redisUrl: $("REDIS_ENDPOINT"),
+  // redisUrl: $("REDIS_ENDPOINT"),
 
   // sendgrid
   // sendgridApiKey: $("SENDGRID_API_KEY", String, ""), 
